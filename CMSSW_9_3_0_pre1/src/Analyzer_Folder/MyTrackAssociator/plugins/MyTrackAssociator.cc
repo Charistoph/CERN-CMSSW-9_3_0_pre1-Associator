@@ -47,6 +47,12 @@ Implementation:
 #include "DataFormats/EgammaReco/interface/ElectronSeed.h"
 #include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
 
+// REF
+//#include "DataFormats/Common/interface/Ref.h"
+//#include "DataFormats/Common/interface/RefVector.h"
+//#include "DataFormats/Common/interface/RefToBase.h"
+//#include "DataFormats/Common/interface/RefToBaseVector.h"
+
 //
 // class declaration
 //
@@ -85,7 +91,6 @@ class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources>
     edm::EDGetTokenT<edm::View<TrajectorySeed> > TrajectorySeedToken_;
 
     edm::EDGetTokenT<TrackingParticleCollection> tpToken_;
-
 
 };
 
@@ -175,10 +180,9 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   iEvent.getByToken(tpToken_,tpHandle);
 
   std::cout << " " << "\n"
-            << "--- Output Prints of MyTrackAssociator ---" << "\n"
-            << " " << "\n"
+            << "--- Output Prints of MyTrackAssociator ---" << "\n" << "\n"
             << "#TrackingParticles = " << tpHandle->size() << "\n"
-            << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n" << std::endl;
+            << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n" << "\n" << std::endl;
 
 // Hier kommt die Associator Funktion
   auto impl = std::make_unique<QuickTrackAssociatorByHitsImpl>(iEvent.productGetter(),
@@ -195,35 +199,36 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   reco::RecoToSimCollectionSeed mySeedToSim = impl->associateRecoToSim(TrajectorySeedHandle,tpHandle);
 
   // REF - Smart Pointer
-//  edm::Ref<edm::View<reco::ElectronSeedCollection> > seedRef(ElectronSeedCollectionHandle_,0);
-//  reco::RecoToSimCollectionSeed::const_iterator iassoc = mySeedToSim.find(seedRef);
+  edm::RefToBase<TrajectorySeed> seedRef(TrajectorySeedHandle,0);
+  reco::RecoToSimCollectionSeed::const_iterator iassoc = mySeedToSim.find(seedRef);
 
+  // Prints
+  std::cout << "------------------------------" << "\n" << "\n" << "#mySeedToSim Size = " << mySeedToSim.size() << "\n"
+//            << "std::typeid((*iassoc).first).name() = " << typeid(*iassoc).name() << "\n"
+//            << "std::typeid((*iassoc).first).name() = " << typeid(*iassoc).name() << "\n"
+            << "#iassoc size = " << (*iassoc).val.size() << "\n"
+            << "\n" << "------------------------------" << "\n" << "\n"
+            << "iassoc Loop " << std::endl;
 
-  std::cout << " Print 2" << "\n"
-            << "#mySeedToSim Size = " << mySeedToSim.size() << "\n"
-//            << "#mySeedToSim Args = " << mySeedToSim.absoluteNumberOfHits_ << "\n"
-            << " " << std::endl;
+  for ( size_t i=0; i< (*iassoc).val.size(); ++i ) {
 
-//  std::cout << "\n" << "tptracks " << "\n" << std::endl;
+    const edm::Ref<TrackingParticleCollection> tref = (*iassoc).val[i].first;
+    double qual = (*iassoc).val[i].second;
 
-// Darf ich das? Ist das die richtige "size"
-//  const auto numTotal = mySeedToSim.size();
-//// Loop um daten aus der Associator funktion zu Printen
-//  for (size_t j = 0 ; j < tpHandle->size(); ++j){
-//    const auto& tptrack = tpHandle->at(j);
-//    std::cout << "Event " << indexEvent
-//              << " Track: " << j
-//              << " Pt: " << tptrack.chi2()
-////              << " numLoose: " << numLoose
-////              << " numTight: " << numTight
-////              << " numHighPurity: " << numHighPurity
-//              << std::endl;
-//    ++indexEvent;
-//
-//  }
+    	std::cout << "\n" << "Event: " << i << "\n"
+      << "iassoc pt: " << tref->pt() << "\n"
+      << "iassoc phi: " << tref->phi() << "\n"
+      << "iassoc eta: " << tref->eta() << "\n"
+      << "iassoc charge: " << tref->charge() << "\n"
+      << "iassoc vertex: " << tref->vertex() << "\n"
+      << "iassoc pdgId: " << tref->pdgId() << "\n"
+      // The method matchedHit() has been deprecated. Use numberOfTrackerLayers() instead.
+      << "iassoc matchedHit: " << tref->numberOfTrackerLayers() << "\n"
+      << "iassoc second: quality:  " << qual << "\n" << std::endl;
 
+  }
 
-  std::cout << "\n" << "End of print" << "\n" << std::endl;
+  std::cout << "\n" << "------------------------------" << "\n" << std::endl;
 
 }
 
