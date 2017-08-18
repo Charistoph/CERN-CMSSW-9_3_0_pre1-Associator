@@ -86,14 +86,15 @@ class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources>
     bool useClusterTPAssociation_;
     bool absoluteNumberOfHits_;
 
-     // ----------member data ---------------------------
-    int indexEvent;
-
+// ----------member data ---------------------------
     edm::EDGetTokenT<edm::View<TrajectorySeed> > TrajectorySeedToken_;
-
     edm::EDGetTokenT<TrackingParticleCollection> tpToken_;
-
     edm::EDGetTokenT<edm::View<reco::GsfTrack> > GsfTrackCollectionToken_;
+
+// ----------counting variables ---------------------------
+    int indexEvent;
+    int assocfound;
+    double successrate;
 
 };
 
@@ -120,11 +121,11 @@ MyTrackAssociator::MyTrackAssociator(const edm::ParameterSet& iConfig):
   absoluteNumberOfHits_( iConfig.getParameter<bool>( "AbsoluteNumberOfHits" ) ){
 
     indexEvent = 0;
+    assocfound = 0;
+    successrate = 0;
 
     TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
-
     tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
-
     GsfTrackCollectionToken_ = consumes<edm::View<reco::GsfTrack> >(edm::InputTag("electronGsfTracks"));
 
 }
@@ -219,40 +220,49 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 //            << "\n" << "------------------------------" << "\n" << "\n"
 //            << "iassoc Loop " << std::endl;
 
-std::cout << "\n" << "pt, phi, eta, charge, vertex, pdgId, #TRLayers, qual" << " " << std::endl;
+//  std::cout << "\n" << "pt, phi, eta, charge, vertex, pdgId, #TRLayers, qual" << " " << std::endl;
 
-for ( size_t j=0; j< GsfTrackCollectionHandle->size() ; ++j ) {
-    const reco::GsfTrack& gsfTrack = GsfTrackCollectionHandle->at(j);
+  for ( size_t j=0; j< GsfTrackCollectionHandle->size() ; ++j ) {
+      const reco::GsfTrack& gsfTrack = GsfTrackCollectionHandle->at(j);
 
-    const edm::RefToBase<TrajectorySeed>& mySeedRef = gsfTrack.seedRef();
-    reco::RecoToSimCollectionSeed::const_iterator iassoc = mySeedToSim.find(mySeedRef);
+      const edm::RefToBase<TrajectorySeed>& mySeedRef = gsfTrack.seedRef();
+      reco::RecoToSimCollectionSeed::const_iterator iassoc = mySeedToSim.find(mySeedRef);
 
-    std::cout << "GSF Track " << j << "\n"<< std::endl;
+//      std::cout << "GSF Track " << j << "\n"<< std::endl;
 
-    if (iassoc != mySeedToSim.end()){
-      for ( size_t i=0; i< (*iassoc).val.size(); ++i ) {
-        
-        std::cout << "iassoc test" << i << "\n"<< std::endl;
+      ++indexEvent;
 
-        const edm::Ref<TrackingParticleCollection> tref = (*iassoc).val[i].first;
-        double qual = (*iassoc).val[i].second;
+      if (iassoc != mySeedToSim.end()){
+        for ( size_t i=0; i< (*iassoc).val.size(); ++i ) {
 
-        std::cout << "\n" << "Event: " << i << " "
-        << tref->pt() << " "
-        << tref->phi() << " "
-        << tref->eta() << " "
-        << tref->charge() << " "
-        << tref->vertex() << " "
-        << tref->pdgId() << " "
-        // The method matchedHit() has been deprecated. Use numberOfTrackerLayers() instead.
-        << tref->numberOfTrackerLayers() << " "
-        << qual << "\n" << std::endl;
+  //        std::cout << "iassoc test" << i << "\n"<< std::endl;
+
+  //        const edm::Ref<TrackingParticleCollection> tref = (*iassoc).val[i].first;
+  //        double qual = (*iassoc).val[i].second;
+  //        std::cout << "\n" << "Event: " << i << " "
+  //        << tref->pt() << " "
+  //        << tref->phi() << " "
+  //        << tref->eta() << " "
+  //        << tref->charge() << " "
+  //        << tref->vertex() << " "
+  //        << tref->pdgId() << " "
+  //        // The method matchedHit() has been deprecated. Use numberOfTrackerLayers() instead.
+  //        << tref->numberOfTrackerLayers() << " "
+  //        << qual << "\n" << std::endl;
+
+          ++assocfound;
+
+        }
       }
-    }
 
-}
+  }
 
-  std::cout << "\n" << "------------------------------" << "\n" << std::endl;
+  successrate = float(assocfound) / float(indexEvent);
+
+  std::cout << "indexEvent = " << indexEvent <<"\n"
+  << "assocfound = " <<assocfound << "\n"
+  << "p found = " << successrate << "\n"
+  <<"\n" << "------------------------------" << "\n" << std::endl;
 
 }
 
