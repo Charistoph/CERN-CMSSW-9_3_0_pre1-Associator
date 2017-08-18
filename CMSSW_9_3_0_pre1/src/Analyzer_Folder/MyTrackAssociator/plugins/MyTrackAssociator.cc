@@ -46,6 +46,7 @@ Implementation:
 #include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
 #include "DataFormats/EgammaReco/interface/ElectronSeed.h"
 #include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
+//#include "DataFormats/TrackReco/interface/TrackBase.h"
 
 // REF
 //#include "DataFormats/Common/interface/Ref.h"
@@ -92,6 +93,8 @@ class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources>
 
     edm::EDGetTokenT<TrackingParticleCollection> tpToken_;
 
+    edm::EDGetTokenT<edm::View<reco::GsfTrack> > GsfTrackCollectionToken_;
+
 };
 
 //
@@ -121,6 +124,8 @@ MyTrackAssociator::MyTrackAssociator(const edm::ParameterSet& iConfig):
     TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
 
     tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
+
+    GsfTrackCollectionToken_ = consumes<edm::View<reco::GsfTrack> >(edm::InputTag("electronGsfTracks"));
 
 }
 
@@ -179,12 +184,16 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   edm::Handle<TrackingParticleCollection> tpHandle;
   iEvent.getByToken(tpToken_,tpHandle);
 
+  edm::Handle<edm::View<reco::GsfTrack> > GsfTrackCollectionHandle;
+  iEvent.getByToken(GsfTrackCollectionToken_, GsfTrackCollectionHandle);
+
   std::cout << " " << "\n"
             << "--- Output Prints of MyTrackAssociator ---" << "\n" << "\n"
             << "#TrackingParticles = " << tpHandle->size() << "\n"
             << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n" << "\n" << std::endl;
 
-// Hier kommt die Associator Funktion
+
+// Associator Funktion
   auto impl = std::make_unique<QuickTrackAssociatorByHitsImpl>(iEvent.productGetter(),
                                                                 std::move(trackAssoc),
                                                                 clusterAssoc,
@@ -198,35 +207,50 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   reco::RecoToSimCollectionSeed mySeedToSim = impl->associateRecoToSim(TrajectorySeedHandle,tpHandle);
 
-  // REF - Smart Pointer
-  edm::RefToBase<TrajectorySeed> seedRef(TrajectorySeedHandle,0);
-  reco::RecoToSimCollectionSeed::const_iterator iassoc = mySeedToSim.find(seedRef);
+// Testing Seed
+// REF - Smart Pointer
+//  edm::RefToBase<TrajectorySeed> seedRef(TrajectorySeedHandle,0);
+//  reco::RecoToSimCollectionSeed::const_iterator iassoc = mySeedToSim.find(seedRef);
 
-  // Prints
-  std::cout << "------------------------------" << "\n" << "\n" << "#mySeedToSim Size = " << mySeedToSim.size() << "\n"
+// Test Prints
+//  std::cout << "------------------------------" << "\n" << "\n" << "#mySeedToSim Size = " << mySeedToSim.size() << "\n"
 //            << "std::typeid((*iassoc).first).name() = " << typeid(*iassoc).name() << "\n"
-//            << "std::typeid((*iassoc).first).name() = " << typeid(*iassoc).name() << "\n"
-            << "#iassoc size = " << (*iassoc).val.size() << "\n"
-            << "\n" << "------------------------------" << "\n" << "\n"
-            << "iassoc Loop " << std::endl;
+//            << "#iassoc size = " << (*iassoc).val.size() << "\n"
+//            << "\n" << "------------------------------" << "\n" << "\n"
+//            << "iassoc Loop " << std::endl;
 
-  for ( size_t i=0; i< (*iassoc).val.size(); ++i ) {
+std::cout << "\n" << "pt, phi, eta, charge, vertex, pdgId, #TRLayers, qual" << " " << std::endl;
 
-    const edm::Ref<TrackingParticleCollection> tref = (*iassoc).val[i].first;
-    double qual = (*iassoc).val[i].second;
+for ( size_t j=0; j< GsfTrackCollectionHandle->size() ; ++j ) {
+    const reco::GsfTrack& gsfTrack = GsfTrackCollectionHandle->at(j);
 
-    	std::cout << "\n" << "Event: " << i << "\n"
-      << "iassoc pt: " << tref->pt() << "\n"
-      << "iassoc phi: " << tref->phi() << "\n"
-      << "iassoc eta: " << tref->eta() << "\n"
-      << "iassoc charge: " << tref->charge() << "\n"
-      << "iassoc vertex: " << tref->vertex() << "\n"
-      << "iassoc pdgId: " << tref->pdgId() << "\n"
-      // The method matchedHit() has been deprecated. Use numberOfTrackerLayers() instead.
-      << "iassoc matchedHit: " << tref->numberOfTrackerLayers() << "\n"
-      << "iassoc second: quality:  " << qual << "\n" << std::endl;
+    const edm::RefToBase<TrajectorySeed>& mySeedRef = gsfTrack.seedRef();
+    reco::RecoToSimCollectionSeed::const_iterator iassoc = mySeedToSim.find(mySeedRef);
 
-  }
+    std::cout << "GSF Track " << j << "\n"<< std::endl;
+
+    if (iassoc != mySeedToSim.end()){
+      for ( size_t i=0; i< (*iassoc).val.size(); ++i ) {
+        
+        std::cout << "iassoc test" << i << "\n"<< std::endl;
+
+        const edm::Ref<TrackingParticleCollection> tref = (*iassoc).val[i].first;
+        double qual = (*iassoc).val[i].second;
+
+        std::cout << "\n" << "Event: " << i << " "
+        << tref->pt() << " "
+        << tref->phi() << " "
+        << tref->eta() << " "
+        << tref->charge() << " "
+        << tref->vertex() << " "
+        << tref->pdgId() << " "
+        // The method matchedHit() has been deprecated. Use numberOfTrackerLayers() instead.
+        << tref->numberOfTrackerLayers() << " "
+        << qual << "\n" << std::endl;
+      }
+    }
+
+}
 
   std::cout << "\n" << "------------------------------" << "\n" << std::endl;
 
