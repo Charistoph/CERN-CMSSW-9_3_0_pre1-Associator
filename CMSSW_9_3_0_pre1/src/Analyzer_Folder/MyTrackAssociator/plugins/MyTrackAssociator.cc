@@ -46,13 +46,9 @@ Implementation:
 #include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
 #include "DataFormats/EgammaReco/interface/ElectronSeed.h"
 #include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
-//#include "DataFormats/TrackReco/interface/TrackBase.h"
 
-// REF
-//#include "DataFormats/Common/interface/Ref.h"
-//#include "DataFormats/Common/interface/RefVector.h"
-//#include "DataFormats/Common/interface/RefToBase.h"
-//#include "DataFormats/Common/interface/RefToBaseVector.h"
+// TTree include
+#include "TTree.h"
 
 //
 // class declaration
@@ -96,6 +92,13 @@ class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources>
     int assocfound;
     double successrate;
 
+// ----------TTree Varibs ---------------------------
+    TTree * track_tree;
+//    int track_varib_nr = 11;
+    float gsf_track[1];
+    // sts = seed to sim
+    float sts_track[1];
+
 };
 
 //
@@ -127,6 +130,8 @@ MyTrackAssociator::MyTrackAssociator(const edm::ParameterSet& iConfig):
     TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
     tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
     GsfTrackCollectionToken_ = consumes<edm::View<reco::GsfTrack> >(edm::InputTag("electronGsfTracks"));
+
+    usesResource("TFileService");
 
 }
 
@@ -193,6 +198,13 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
             << "#TrackingParticles = " << tpHandle->size() << "\n"
             << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n" << "\n" << std::endl;
 
+// Initialize Variables
+//  for (int i = 0; track_varib_nr; ++i){
+      gsf_track[0] = 0;
+//      gsf_track[1] = 0;
+      sts_track[0] = 0;
+//      sts_track[1] = 0;
+//  };
 
 // Associator Funktion
   auto impl = std::make_unique<QuickTrackAssociatorByHitsImpl>(iEvent.productGetter(),
@@ -235,6 +247,10 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       if (iassoc != mySeedToSim.end()){
         for ( size_t i=0; i< (*iassoc).val.size(); ++i ) {
 
+// test Tree Variables
+//          sts_track[1]=i;
+//          std::cout << "sts_track test" << sts_track[1] << "\n"<< std::endl;
+
   //        std::cout << "iassoc test" << i << "\n"<< std::endl;
 
   //        const edm::Ref<TrackingParticleCollection> tref = (*iassoc).val[i].first;
@@ -251,6 +267,9 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   //        << qual << "\n" << std::endl;
 
           ++assocfound;
+
+// Wert der Varib in Tre datenstruktur kopieren
+          track_tree->Fill();
 
         }
       }
@@ -272,6 +291,14 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 void
 MyTrackAssociator::beginJob()
 {
+
+  using namespace edm;
+
+  // initialize tree
+  track_tree   = new TTree("track_associator_tree","Associator tree with two branches" );
+  track_tree->Branch("gsf_branch", &gsf_track, "gsf_track[11]/F");
+  track_tree->Branch("sts_branch", &sts_track, "sts_track[11]/F");
+
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
