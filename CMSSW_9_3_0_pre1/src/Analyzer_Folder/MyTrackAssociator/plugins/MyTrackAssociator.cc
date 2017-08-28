@@ -101,10 +101,6 @@ class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources>
 // sts = seed to sim
     float sts_track[8];
 
-// ----------Histogram ---------------------------
-//    TH1F * h_sts_pt;
-//    TH1F * h_sts_pt, * h_sts_phi, * h_sts_eta, * h_gsf_pt, * h_gsf_phi, * h_gsf_eta;
-
 };
 
 //
@@ -297,10 +293,6 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
           ++assocfound;
 
-//          h_sts_pt->Fill( tref->pt() );
-//          h_sts_phi->Fill( tref->phi() );
-//          h_sts_eta->Fill( tref->eta() );
-
         }
       }
 
@@ -345,10 +337,6 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         track_tree->Fill();
         std::cout << "gsf Fill worked! " << std::endl;
 
-//          h_gsf_pt->Fill( gsfTrack.pt() );
-//          h_gsf_phi->Fill( gsfTrack.phi() );
-//          h_gsf_eta->Fill( gsfTrack.eta() );
-
       }
 
 // Initialize Variables
@@ -378,15 +366,10 @@ MyTrackAssociator::beginJob()
   using namespace edm;
 
 // initialize tree
-  track_tree   = new TTree("track_associator_tree","Associator tree with two branches" );
+  edm::Service<TFileService> fs;
+  track_tree = fs->make<TTree>("track_associator_tree","Associator tree with two branches" );
   track_tree->Branch("gsf_branch", &gsf_track, "gsf_track[8]/F");
   track_tree->Branch("sts_branch", &sts_track, "sts_track[8]/F");
-
-// Histos
-// fs is instatierung von Service<TFileService Klasse
-//  edm::Service<TFileService> fs;
-//// def histogram
-//  h_sts_pt = fs->make<TH1F>( "h_sts_pt"  , "p_{t}", 100,  0., 100 );
 
 }
 
