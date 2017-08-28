@@ -198,14 +198,6 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
             << "#TrackingParticles = " << tpHandle->size() << "\n"
             << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n" << "\n" << std::endl;
 
-// Initialize Variables
-//  for (int i = 0; track_varib_nr; ++i){
-      gsf_track[0] = 0;
-//      gsf_track[1] = 0;
-      sts_track[0] = 0;
-//      sts_track[1] = 0;
-//  };
-
 // Associator Funktion
   auto impl = std::make_unique<QuickTrackAssociatorByHitsImpl>(iEvent.productGetter(),
                                                                 std::move(trackAssoc),
@@ -253,26 +245,38 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   //        std::cout << "iassoc test" << i << "\n"<< std::endl;
 
-  //        const edm::Ref<TrackingParticleCollection> tref = (*iassoc).val[i].first;
-  //        double qual = (*iassoc).val[i].second;
-  //        std::cout << "\n" << "Event: " << i << " "
-  //        << tref->pt() << " "
-  //        << tref->phi() << " "
-  //        << tref->eta() << " "
-  //        << tref->charge() << " "
-  //        << tref->vertex() << " "
-  //        << tref->pdgId() << " "
-  //        // The method matchedHit() has been deprecated. Use numberOfTrackerLayers() instead.
-  //        << tref->numberOfTrackerLayers() << " "
-  //        << qual << "\n" << std::endl;
+        const edm::Ref<TrackingParticleCollection> tref = (*iassoc).val[i].first;
+        double qual = (*iassoc).val[i].second;
+        std::cout << "\n" << "Event: " << i << " "
+        << tref->pt() << " "
+        << tref->phi() << " "
+        << tref->eta() << " "
+        << tref->charge() << " "
+        << tref->vertex() << " "
+        << tref->pdgId() << " "
+        // The method matchedHit() has been deprecated. Use numberOfTrackerLayers() instead.
+        << tref->numberOfTrackerLayers() << " "
+        << qual << "\n" << std::endl;
 
           ++assocfound;
 
 // Wert der Varib in Tre datenstruktur kopieren
-          track_tree->Fill();
 
         }
+      } else {
+        std::cout << " No sim to reco! " << "\n"
+//        << "gsfTrack.momentum().Pt() " << gsfTrack.momentum().Pt() << "\n"
+        << "gsfTrack.pt() " << gsfTrack.pt() << "\n" << std::endl;
       }
+
+// Initialize Variables
+//  for (int i = 0; track_varib_nr; ++i){
+      gsf_track[0] = 0;
+//      gsf_track[1] = 0;
+      sts_track[0] = 0;
+//      sts_track[1] = 0;
+//  };
+      track_tree->Fill();
 
   }
 
