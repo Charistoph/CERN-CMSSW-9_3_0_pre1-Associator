@@ -94,10 +94,14 @@ class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources>
 
 // ----------TTree Varibs ---------------------------
     TTree * track_tree;
-//    int track_varib_nr = 11;
-    float gsf_track[1];
-    // sts = seed to sim
-    float sts_track[1];
+    int track_varib_nr;
+    float gsf_track[8];
+// sts = seed to sim
+    float sts_track[8];
+
+// ----------Histogram ---------------------------
+//    TH1F * h_sts_pt;
+//    TH1F * h_sts_pt, * h_sts_phi, * h_sts_eta, * h_gsf_pt, * h_gsf_phi, * h_gsf_eta;
 
 };
 
@@ -126,6 +130,8 @@ MyTrackAssociator::MyTrackAssociator(const edm::ParameterSet& iConfig):
     indexEvent = 0;
     assocfound = 0;
     successrate = 0;
+    track_varib_nr = 7;
+
 
     TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
     tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
@@ -239,44 +245,115 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       if (iassoc != mySeedToSim.end()){
         for ( size_t i=0; i< (*iassoc).val.size(); ++i ) {
 
-// test Tree Variables
-//          sts_track[1]=i;
-//          std::cout << "sts_track test" << sts_track[1] << "\n"<< std::endl;
+          const edm::Ref<TrackingParticleCollection> tref = (*iassoc).val[i].first;
+          double qual = (*iassoc).val[i].second;
 
-  //        std::cout << "iassoc test" << i << "\n"<< std::endl;
+// Test if variables work
+          std::cout << "Sim to reco found! pt = " << tref->pt() << "\n"
+          << "qual = " << qual << "\n" << std::endl;
 
-        const edm::Ref<TrackingParticleCollection> tref = (*iassoc).val[i].first;
-        double qual = (*iassoc).val[i].second;
-        std::cout << "\n" << "Event: " << i << " "
-        << tref->pt() << " "
-        << tref->phi() << " "
-        << tref->eta() << " "
-        << tref->charge() << " "
-        << tref->vertex() << " "
-        << tref->pdgId() << " "
-        // The method matchedHit() has been deprecated. Use numberOfTrackerLayers() instead.
-        << tref->numberOfTrackerLayers() << " "
-        << qual << "\n" << std::endl;
+//          std::cout << "\n" << "Event: " << i << " "
+//          << tref->pt() << " "
+//          << tref->phi() << " "
+//          << tref->eta() << " "
+//          << tref->charge() << " "
+//          << tref->vertex() << " "
+//          << tref->pdgId() << " "
+//          // The method matchedHit() has been deprecated. Use numberOfTrackerLayers() instead.
+//          << tref->numberOfTrackerLayers() << " "
+//          << qual << "\n" << std::endl;
+
+// Wert der Varib in Tree datenstruktur kopieren
+//          for (int k = 0; track_varib_nr; ++k){
+//            std::cout << "Set to 0 loop! " << k << std::endl;
+//            sts_track[k] = 0;
+//          }
+          sts_track[0] = 0;
+          sts_track[1] = 0;
+          sts_track[2] = 0;
+          sts_track[3] = 0;
+          sts_track[4] = 0;
+          sts_track[5] = 0;
+          sts_track[6] = 0;
+          sts_track[7] = 0;
+
+          std::cout << "sts set to 0 worked! " << std::endl;
+
+          sts_track[0] = tref->pt();
+          sts_track[1] = tref->phi();
+          sts_track[2] = tref->eta();
+          sts_track[3] = tref->charge();
+// Äquivalent gsfTrack.dxy()
+          sts_track[4] = 0;
+// Äquivalent gsfTrack.dz()
+          sts_track[5] = 0;
+          sts_track[6] = tref->numberOfTrackerLayers();
+          sts_track[7] = float(qual);
+
+          track_tree->Fill();
+          std::cout << "sts Fill worked! " << std::endl;
 
           ++assocfound;
 
-// Wert der Varib in Tre datenstruktur kopieren
+//          h_sts_pt->Fill( tref->pt() );
+//          h_sts_phi->Fill( tref->phi() );
+//          h_sts_eta->Fill( tref->eta() );
 
         }
-      } else {
-        std::cout << " No sim to reco! " << "\n"
-//        << "gsfTrack.momentum().Pt() " << gsfTrack.momentum().Pt() << "\n"
-        << "gsfTrack.pt() " << gsfTrack.pt() << "\n" << std::endl;
+      }
+
+      else {
+// Test if varaibles can be found.
+        std::cout << "No sim to reco! pt = " << gsfTrack.pt() << "\n" << std::endl;
+
+// Wert der Varib in Tree datenstruktur kopieren
+// Wert der Varib in Tree datenstruktur kopieren
+//          for (int k = 0; track_varib_nr; ++k){
+//            std::cout << "Set to 0 loop! " << k << std::endl;
+//            gsf_track[k] = 0;
+//          }
+        gsf_track[0] = 0;
+        gsf_track[1] = 0;
+        gsf_track[2] = 0;
+        gsf_track[3] = 0;
+        gsf_track[4] = 0;
+        gsf_track[5] = 0;
+        gsf_track[6] = 0;
+        gsf_track[7] = 0;
+
+        std::cout << "gsf set to 0 worked! " << std::endl;
+
+        gsf_track[0] = gsfTrack.pt();
+        gsf_track[1] = gsfTrack.phi();
+        gsf_track[2] = gsfTrack.eta();
+        gsf_track[3] = gsfTrack.charge();
+        gsf_track[4] = gsfTrack.dxy();
+        gsf_track[5] = gsfTrack.dz();
+        gsf_track[6] = gsfTrack.numberOfValidHits();
+// geht nicht:
+//        gsf_track[6] = gsfTrack.quality();
+// alternative
+// Error:  which is of non-class type 'float [8]' - convert to float?
+//        if (gsf_track.quality(gsf_track.qualityByName("loose")))      gsf_track[6] = 0;
+//        if (gsf_track.quality(gsf_track.qualityByName("tight")))      gsf_track[6] = 1;
+//        if (gsf_track.quality(gsf_track.qualityByName("highPurity"))) gsf_track[6] = 2;
+// Platzhalter
+        gsf_track[7] = gsfTrack.pt();
+
+        track_tree->Fill();
+        std::cout << "gsf Fill worked! " << std::endl;
+
+//          h_gsf_pt->Fill( gsfTrack.pt() );
+//          h_gsf_phi->Fill( gsfTrack.phi() );
+//          h_gsf_eta->Fill( gsfTrack.eta() );
+
       }
 
 // Initialize Variables
-//  for (int i = 0; track_varib_nr; ++i){
-      gsf_track[0] = 0;
-//      gsf_track[1] = 0;
-      sts_track[0] = 0;
-//      sts_track[1] = 0;
+//  for (int k = 0; track_varib_nr; ++k){
+//      gsf_track[k] = 0;
+//      sts_track[k] = 0;
 //  };
-      track_tree->Fill();
 
   }
 
@@ -298,10 +375,16 @@ MyTrackAssociator::beginJob()
 
   using namespace edm;
 
-  // initialize tree
+// initialize tree
   track_tree   = new TTree("track_associator_tree","Associator tree with two branches" );
-  track_tree->Branch("gsf_branch", &gsf_track, "gsf_track[11]/F");
-  track_tree->Branch("sts_branch", &sts_track, "sts_track[11]/F");
+  track_tree->Branch("gsf_branch", &gsf_track, "gsf_track/F");
+  track_tree->Branch("sts_branch", &sts_track, "sts_track/F");
+
+// Histos
+// fs is instatierung von Service<TFileService Klasse
+//  edm::Service<TFileService> fs;
+// def histogram
+//  h_sts_pt    = fs->make<TH1F>( "sts_pt"  , "p_{t}", 100,  0., 100 );
 
 }
 
