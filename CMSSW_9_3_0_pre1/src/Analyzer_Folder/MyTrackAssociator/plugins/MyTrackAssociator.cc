@@ -368,8 +368,12 @@ MyTrackAssociator::beginJob()
 // initialize tree
   edm::Service<TFileService> fs;
   track_tree = fs->make<TTree>("track_associator_tree","Associator tree with two branches" );
+  // original
   track_tree->Branch("gsf_branch", &gsf_track, "gsf_track[8]/F");
   track_tree->Branch("sts_branch", &sts_track, "sts_track[8]/F");
+// new names
+//  track_tree->Branch("gsf_branch", &gsf_track, "gsf_pt/F gsf_phi/F gsf_eta/F gsf_charge/F gsf_dxy/F gsf_dz/F gsf_numberTrackerL/F gsf_qual/F");
+//  track_tree->Branch("sts_branch", &sts_track, "sts_pt/F, sts_phi/F, sts_eta/F, sts_charge/F, sts_dxy/F, sts_dz/F, sts_numberTrackerL/F, sts_qual/F");
 
 }
 
