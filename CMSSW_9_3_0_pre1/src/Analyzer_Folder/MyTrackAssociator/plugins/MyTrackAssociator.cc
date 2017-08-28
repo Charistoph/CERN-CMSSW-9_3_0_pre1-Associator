@@ -130,7 +130,6 @@ MyTrackAssociator::MyTrackAssociator(const edm::ParameterSet& iConfig):
     successrate = 0;
     track_varib_nr = 7;
 
-
     TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
     tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
     GsfTrackCollectionToken_ = consumes<edm::View<reco::GsfTrack> >(edm::InputTag("electronGsfTracks"));
@@ -236,8 +235,7 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       const edm::RefToBase<TrajectorySeed>& mySeedRef = gsfTrack.seedRef();
       reco::RecoToSimCollectionSeed::const_iterator iassoc = mySeedToSim.find(mySeedRef);
 
-//      std::cout << "GSF Track " << j << "\n"<< std::endl;
-
+//      std::cout << "Event " << indexEvent << "\n"<< std::endl;
       ++indexEvent;
 
       if (iassoc != mySeedToSim.end()){
@@ -249,17 +247,6 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 // Test if variables work
           std::cout << "Sim to reco found! pt = " << tref->pt() << "\n"
           << "qual = " << qual << "\n" << std::endl;
-
-//          std::cout << "\n" << "Event: " << i << " "
-//          << tref->pt() << " "
-//          << tref->phi() << " "
-//          << tref->eta() << " "
-//          << tref->charge() << " "
-//          << tref->vertex() << " "
-//          << tref->pdgId() << " "
-//          // The method matchedHit() has been deprecated. Use numberOfTrackerLayers() instead.
-//          << tref->numberOfTrackerLayers() << " "
-//          << qual << "\n" << std::endl;
 
 // Wert der Varib in Tree datenstruktur kopieren
 //          for (int k = 0; track_varib_nr; ++k){
@@ -301,9 +288,7 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         std::cout << "No sim to reco! pt = " << gsfTrack.pt() << "\n" << std::endl;
 
 // Wert der Varib in Tree datenstruktur kopieren
-// Wert der Varib in Tree datenstruktur kopieren
 //          for (int k = 0; track_varib_nr; ++k){
-//            std::cout << "Set to 0 loop! " << k << std::endl;
 //            gsf_track[k] = 0;
 //          }
         gsf_track[0] = 0;
@@ -332,18 +317,12 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 //        if (gsf_track.quality(gsf_track.qualityByName("tight")))      gsf_track[6] = 1;
 //        if (gsf_track.quality(gsf_track.qualityByName("highPurity"))) gsf_track[6] = 2;
 // Platzhalter
-        gsf_track[7] = gsfTrack.pt();
+        gsf_track[7] = 0;
 
         track_tree->Fill();
         std::cout << "gsf Fill worked! " << std::endl;
 
       }
-
-// Initialize Variables
-//  for (int k = 0; track_varib_nr; ++k){
-//      gsf_track[k] = 0;
-//      sts_track[k] = 0;
-//  };
 
   }
 
@@ -368,10 +347,8 @@ MyTrackAssociator::beginJob()
 // initialize tree
   edm::Service<TFileService> fs;
   track_tree = fs->make<TTree>("track_associator_tree","Associator tree with two branches" );
-  // original
   track_tree->Branch("gsf_branch", &gsf_track, "gsf_track[8]/F");
   track_tree->Branch("sts_branch", &sts_track, "sts_track[8]/F");
-// new names
 //  track_tree->Branch("gsf_branch", &gsf_track, "gsf_pt/F gsf_phi/F gsf_eta/F gsf_charge/F gsf_dxy/F gsf_dz/F gsf_numberTrackerL/F gsf_qual/F");
 //  track_tree->Branch("sts_branch", &sts_track, "sts_pt/F, sts_phi/F, sts_eta/F, sts_charge/F, sts_dxy/F, sts_dz/F, sts_numberTrackerL/F, sts_qual/F");
 
