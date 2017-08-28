@@ -49,6 +49,8 @@ Implementation:
 
 // TTree include
 #include "TTree.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
 
 //
 // class declaration
@@ -377,14 +379,14 @@ MyTrackAssociator::beginJob()
 
 // initialize tree
   track_tree   = new TTree("track_associator_tree","Associator tree with two branches" );
-  track_tree->Branch("gsf_branch", &gsf_track, "gsf_track/F");
-  track_tree->Branch("sts_branch", &sts_track, "sts_track/F");
+  track_tree->Branch("gsf_branch", &gsf_track, "gsf_track[8]/F");
+  track_tree->Branch("sts_branch", &sts_track, "sts_track[8]/F");
 
 // Histos
 // fs is instatierung von Service<TFileService Klasse
 //  edm::Service<TFileService> fs;
-// def histogram
-//  h_sts_pt    = fs->make<TH1F>( "sts_pt"  , "p_{t}", 100,  0., 100 );
+//// def histogram
+//  h_sts_pt = fs->make<TH1F>( "h_sts_pt"  , "p_{t}", 100,  0., 100 );
 
 }
 

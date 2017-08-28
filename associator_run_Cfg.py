@@ -37,6 +37,8 @@ process.source = cms.Source("PoolSource",
     secondaryFileNames = cms.untracked.vstring()
 )
 
+
+
 process.options = cms.untracked.PSet(
 
 )
@@ -108,6 +110,7 @@ process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
 )
 
 # Additional output definition
+process.TFileService = cms.Service("TFileService", fileName = cms.string("output_gsf_associator.root") )
 
 # Other statements
 process.mix.playback = True

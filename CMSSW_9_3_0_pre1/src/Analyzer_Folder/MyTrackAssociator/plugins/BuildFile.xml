@@ -6,6 +6,7 @@
 
 # For TFile
 <use name="PhysicsTools/UtilAlgos"/>
+<use name="FWCore/ServiceRegistry"/>
 
 # I think i need this for the Assciator
 #<use name="afs/cern.ch/user/c/cbernkop/ComparingTracks/CMSSW_9_3_0_pre1/src/Analyzer_Folder/TrackCompAnalyzer"/>
