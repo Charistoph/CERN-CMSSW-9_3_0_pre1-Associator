@@ -12,8 +12,9 @@ tree = tree_dir.Get("track_associator_tree")
 #tree_dir.ls()
 
 # create output folder
-namestr = filename.replace(".root", "")
-outputpath = os.path.join('output_' + namestr)
+outputpath = filename.replace(".root", "")
+#namestr = filename.replace(".root", "")
+#outputpath = os.path.join('output_' + namestr)
 if (os.path.exists(outputpath)==False):
     os.makedirs(outputpath)
     print "path created", outputpath
@@ -21,48 +22,67 @@ if (os.path.exists(outputpath)==False):
 print "path and file routine complete\n"
 
 # define histograms
-gsf_track_pt   = ROOT.TH1F("gsf_track_pt", "gsf_track_pt", 100, 0.0, 100.0)
-gsf_track_phi   = ROOT.TH1F("gsf_track_phi", "gsf_track_phi", 100, 0.0, 100.0)
-gsf_track_eta   = ROOT.TH1F("gsf_track_eta", "gsf_track_eta", 100, 0.0, 100.0)
-sts_track_pt   = ROOT.TH1F("sts_track_pt", "sts_track_pt", 100, 0.0, 100.0)
-sts_track_phi   = ROOT.TH1F("sts_track_phi", "sts_track_phi", 100, 0.0, 100.0)
-sts_track_eta   = ROOT.TH1F("sts_track_eta", "sts_track_eta", 100, 0.0, 100.0)
+assoc_track_pt = ROOT.TH1F("assoc_track_pt", "assoc_track_pt", 100, 0.0, 100.0)
+assoc_track_phi = ROOT.TH1F("assoc_track_phi", "assoc_track_phi", 3, -3, 3)
+assoc_track_eta = ROOT.TH1F("assoc_track_eta", "assoc_track_eta", 3, -3, 3)
+assoc_track_numberOfValidHits = ROOT.TH1F("assoc_track_numberOfValidHits", "assoc_track_numberOfValidHits", 100, 0.0, 100.0)
+all_track_quality = ROOT.TH1F("all_track_quality", "all_track_quality", 2, -2.0, 2.0)
+all_track_pt = ROOT.TH1F("all_track_pt", "all_track_pt", 100, 0.0, 100.0)
+all_track_phi = ROOT.TH1F("all_track_phi", "all_track_phi", 3, -3, 3)
+all_track_eta = ROOT.TH1F("all_track_eta", "all_track_eta", 3, -3, 3)
+all_track_numberOfValidHits = ROOT.TH1F("all_track_eta", "all_track_numberOfValidHits", 100, 0.0, 100.0)
 
 # loop over all events in tree
 for event in tree:
-    gsf_track_pt.Fill(event.gsf_track[0])
-    gsf_track_phi.Fill(event.gsf_track[1])
-    gsf_track_eta.Fill(event.gsf_track[2])
-    sts_track_pt.Fill(event.sts_track[0])
-    sts_track_phi.Fill(event.sts_track[1])
-    sts_track_eta.Fill(event.sts_track[2])
+    if event.assoc_track[7] == 1:
+        assoc_track_pt.Fill(event.assoc_track[0])
+        assoc_track_phi.Fill(event.assoc_track[1])
+        assoc_track_eta.Fill(event.assoc_track[2])
+        assoc_track_numberOfValidHits.Fill(event.assoc_track[6])
+    all_track_quality.Fill(event.assoc_track[7])
+    all_track_pt.Fill(event.assoc_track[0])
+    all_track_phi.Fill(event.assoc_track[1])
+    all_track_eta.Fill(event.assoc_track[2])
+    all_track_numberOfValidHits.Fill(event.assoc_track[6])
 
 c = ROOT.TCanvas( "c", "c", 800, 800)
 
 # save histos
-gsf_track_pt.Draw()
+assoc_track_pt.Draw()
 ROOT.gPad.Update()
-c.SaveAs(outputpath + "/gsf_track_pt.png")
+c.SaveAs(outputpath + "/assoc_track_pt.png")
 
-gsf_track_phi.Draw()
+assoc_track_phi.Draw()
 ROOT.gPad.Update()
-c.SaveAs(outputpath + "/gsf_track_phi.png")
+c.SaveAs(outputpath + "/assoc_track_phi.png")
 
-gsf_track_eta.Draw()
+assoc_track_eta.Draw()
 ROOT.gPad.Update()
-c.SaveAs(outputpath + "/gsf_track_eta.png")
+c.SaveAs(outputpath + "/assoc_track_eta.png")
 
-sts_track_pt.Draw()
+assoc_track_numberOfValidHits.Draw()
 ROOT.gPad.Update()
-c.SaveAs(outputpath + "/sts_track_pt.png")
+c.SaveAs(outputpath + "/assoc_track_numberOfValidHits.png")
 
-sts_track_phi.Draw()
+all_track_quality.Draw()
 ROOT.gPad.Update()
-c.SaveAs(outputpath + "/sts_track_phi.png")
+c.SaveAs(outputpath + "/all_track_quality.png")
 
-sts_track_eta.Draw()
+all_track_pt.Draw()
 ROOT.gPad.Update()
-c.SaveAs(outputpath + "/sts_track_eta.png")
+c.SaveAs(outputpath + "/all_track_pt.png")
+
+all_track_phi.Draw()
+ROOT.gPad.Update()
+c.SaveAs(outputpath + "/all_track_phi.png")
+
+all_track_eta.Draw()
+ROOT.gPad.Update()
+c.SaveAs(outputpath + "/all_track_eta.png")
+
+all_track_numberOfValidHits.Draw()
+ROOT.gPad.Update()
+c.SaveAs(outputpath + "/all_track_numberOfValidHits.png")
 
 print "Histos printed.\n"
 
