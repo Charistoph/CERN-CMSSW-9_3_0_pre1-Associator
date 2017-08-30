@@ -93,14 +93,14 @@ class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources>
 // ----------counting variables ---------------------------
     int indexEvent;
     int assocseedfound;
-    double successrate;
+    int assoctrackfound;
+    double seedsuccessrate;
+    double tracksuccessrate;
 
 // ----------TTree Varibs ---------------------------
     TTree * track_tree;
     int track_varib_nr;
-    float gsf_track[8];
-// sts = seed to sim
-    float assoc_track[8];
+    float assoc_track[9];
 
 };
 
@@ -128,8 +128,10 @@ MyTrackAssociator::MyTrackAssociator(const edm::ParameterSet& iConfig):
 
     indexEvent = 0;
     assocseedfound = 0;
-    successrate = 0;
-    track_varib_nr = 7;
+    assoctrackfound = 0;
+    seedsuccessrate = 0;
+    tracksuccessrate = 0;
+    track_varib_nr = 8;
 
     TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
     tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
@@ -201,7 +203,7 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   edm::Handle<edm::View<reco::Track> > TrackCollectionHandle;
   iEvent.getByToken(TrackCollectionToken_, TrackCollectionHandle);
 
-  std::cout << " " << "\n"
+  std::cout << " " << "\n" << "------------------------------------------" << "\n" << "\n"
             << "--- Output Prints of MyTrackAssociator ---" << "\n" << "\n"
             << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n"
             << "#TrackingParticles = " << tpHandle->size() << "\n" << "\n" << std::endl;
@@ -260,6 +262,7 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       assoc_track[5] = 0;
       assoc_track[6] = 0;
       assoc_track[7] = 0;
+      assoc_track[8] = 0;
 
       std::cout << "assoc_track set to 0 worked! " << std::endl;
 
@@ -272,50 +275,66 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       assoc_track[6] = gsfTrack.numberOfValidHits();
 
       if (iassocseed != mySeedToSim.end()){
-//        for ( size_t i=0; i< (*iassocseed).val.size(); ++i ) {
 
-          std::cout << "Sim to reco found" << "\n" << std::endl;
+            std::cout << "Sim to reco seed found" << std::endl;
 
-          if ((*iassocseed).val[j].second == 1){
-            assoc_track[7] = float((*iassocseed).val[j].second);
-            track_tree->Fill();
-            std::cout << "assoc filled! " << std::endl;
-          }
+            if ((*iassocseed).val[j].second == 1){
+                assoc_track[7] = float((*iassocseed).val[j].second);
+                std::cout << "assocseed filled! " << "\n" << std::endl;
+            }
 
-          else {
-            std::cout << "not filled, bad quality! " << std::endl;
-          }
+            else {
+                std::cout << "assocseed not filled, bad quality! " << std::endl;
+            }
 
-          ++assocseedfound;
-
-//        }
-      }
-
-      if (iassoctrack != myTrackToSim.end()){
-
-        std::cout << "#myTrackToSim Size = " << myTrackToSim.size() << "\n"
-        << "std::typeid((*iassoctrack).first).name() = " << typeid(*iassoctrack).name() << "\n" << std::endl;
-        std::cout << "#iassoctrack qual = " << (*iassoctrack).val[j].second << std::endl;
-        std::cout << "iassoctrack qual works." << "\n" << std::endl;
+            ++assocseedfound;
 
       }
 
       else {
+          std::cout << "No sim to reco seed! " << "\n" << std::endl;
+          assoc_track[7] = -1;
+      }
 
-        std::cout << "No sim to reco! pt = " << gsfTrack.pt() << "\n" << std::endl;
-        assoc_track[7] = -1;
-        track_tree->Fill();
-        std::cout << "gsf Fill worked! " << std::endl;
+      if (iassoctrack != myTrackToSim.end()){
+
+          std::cout << "Sim to reco track found" << std::endl;
+          std::cout << "#myTrackToSim Size = " << myTrackToSim.size() << std::endl;
+//        << "std::typeid((*iassoctrack).first).name() = " << typeid(*iassoctrack).name() << "\n" << std::endl;
+          std::cout << "#iassoctrack qual = " << (*iassoctrack).val[j].second << std::endl;
+
+          if ((*iassoctrack).val[j].second == 1){
+              assoc_track[8] = float((*iassoctrack).val[j].second);
+              std::cout << "assoctrack filled! " << "\n" << std::endl;
+          }
+
+          else {
+              std::cout << "assoctrack not filled, bad quality! " << std::endl;
+          }
+
+          ++ assoctrackfound;
 
       }
+
+      else {
+          std::cout << "No sim to reco track! " << "\n" << std::endl;
+          assoc_track[8] = -1;
+      }
+
+      track_tree->Fill();
+      std::cout << "track_tree fill worked! " << "\n" << "\n" << std::endl;
+
   }
 
-  successrate = float(assocseedfound) / float(indexEvent);
+  seedsuccessrate = float(assocseedfound) / float(indexEvent);
+  tracksuccessrate = float(assoctrackfound) / float(indexEvent);
 
   std::cout << "indexEvent = " << indexEvent <<"\n"
   << "assocseedfound = " <<assocseedfound << "\n"
-  << "p found = " << successrate << "\n"
-  <<"\n" << "------------------------------" << "\n" << std::endl;
+  << "p found = " << seedsuccessrate << "\n"
+  << "assoctrackfound = " <<assoctrackfound << "\n"
+  << "p found = " << tracksuccessrate << "\n"
+  <<"\n" << "------------------------------------------" << "\n" << std::endl;
 
 }
 
@@ -331,7 +350,7 @@ MyTrackAssociator::beginJob()
 // initialize tree
   edm::Service<TFileService> fs;
   track_tree = fs->make<TTree>("track_associator_tree","Associator tree with one branch" );
-  track_tree->Branch("assoc_track", &assoc_track, "assoc_track[8]/F");
+  track_tree->Branch("assoc_track", &assoc_track, "assoc_track[9]/F");
 
 }
 
