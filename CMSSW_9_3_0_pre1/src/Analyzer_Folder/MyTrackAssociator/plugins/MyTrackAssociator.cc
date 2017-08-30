@@ -88,10 +88,11 @@ class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources>
     edm::EDGetTokenT<edm::View<TrajectorySeed> > TrajectorySeedToken_;
     edm::EDGetTokenT<TrackingParticleCollection> tpToken_;
     edm::EDGetTokenT<edm::View<reco::GsfTrack> > GsfTrackCollectionToken_;
+    edm::EDGetTokenT<edm::View<reco::Track> > TrackCollectionToken_;
 
 // ----------counting variables ---------------------------
     int indexEvent;
-    int assocfound;
+    int assocseedfound;
     double successrate;
 
 // ----------TTree Varibs ---------------------------
@@ -126,13 +127,14 @@ MyTrackAssociator::MyTrackAssociator(const edm::ParameterSet& iConfig):
   absoluteNumberOfHits_( iConfig.getParameter<bool>( "AbsoluteNumberOfHits" ) ){
 
     indexEvent = 0;
-    assocfound = 0;
+    assocseedfound = 0;
     successrate = 0;
     track_varib_nr = 7;
 
     TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
     tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
     GsfTrackCollectionToken_ = consumes<edm::View<reco::GsfTrack> >(edm::InputTag("electronGsfTracks"));
+    TrackCollectionToken_ = consumes<edm::View<reco::Track> >(edm::InputTag("electronGsfTracks"));
 
     usesResource("TFileService");
 
@@ -196,10 +198,13 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   edm::Handle<edm::View<reco::GsfTrack> > GsfTrackCollectionHandle;
   iEvent.getByToken(GsfTrackCollectionToken_, GsfTrackCollectionHandle);
 
+  edm::Handle<edm::View<reco::Track> > TrackCollectionHandle;
+  iEvent.getByToken(TrackCollectionToken_, TrackCollectionHandle);
+
   std::cout << " " << "\n"
             << "--- Output Prints of MyTrackAssociator ---" << "\n" << "\n"
-            << "#TrackingParticles = " << tpHandle->size() << "\n"
-            << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n" << "\n" << std::endl;
+            << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n"
+            << "#TrackingParticles = " << tpHandle->size() << "\n" << "\n" << std::endl;
 
 // Associator Funktion
   auto impl = std::make_unique<QuickTrackAssociatorByHitsImpl>(iEvent.productGetter(),
@@ -215,27 +220,32 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   reco::RecoToSimCollectionSeed mySeedToSim = impl->associateRecoToSim(TrajectorySeedHandle,tpHandle);
 
+  reco::RecoToSimCollection myTrackToSim = impl->associateRecoToSim(TrackCollectionHandle,tpHandle);
+
 // Testing Seed
 // REF - Smart Pointer
 //  edm::RefToBase<TrajectorySeed> seedRef(TrajectorySeedHandle,0);
-//  reco::RecoToSimCollectionSeed::const_iterator iassoc = mySeedToSim.find(seedRef);
+//  reco::RecoToSimCollectionSeed::const_iterator iassocseed = mySeedToSim.find(seedRef);
 
 // Test Prints
 //  std::cout << "------------------------------" << "\n" << "\n" << "#mySeedToSim Size = " << mySeedToSim.size() << "\n"
-//            << "std::typeid((*iassoc).first).name() = " << typeid(*iassoc).name() << "\n"
-//            << "#iassoc size = " << (*iassoc).val.size() << "\n"
+//            << "std::typeid((*iassocseed).first).name() = " << typeid(*iassocseed).name() << "\n"
+//            << "#iassocseed size = " << (*iassocseed).val.size() << "\n"
 //            << "\n" << "------------------------------" << "\n" << "\n"
-//            << "iassoc Loop " << std::endl;
+//            << "iassocseed Loop " << std::endl;
 
 //  std::cout << "\n" << "pt, phi, eta, charge, vertex, pdgId, #TRLayers, qual" << " " << std::endl;
 
   for ( size_t j=0; j< GsfTrackCollectionHandle->size() ; ++j ) {
       const reco::GsfTrack& gsfTrack = GsfTrackCollectionHandle->at(j);
 
-      const edm::RefToBase<TrajectorySeed>& mySeedRef = gsfTrack.seedRef();
-      reco::RecoToSimCollectionSeed::const_iterator iassoc = mySeedToSim.find(mySeedRef);
-
       ++indexEvent;
+
+      const edm::RefToBase<TrajectorySeed>& mySeedRef = gsfTrack.seedRef();
+      reco::RecoToSimCollectionSeed::const_iterator iassocseed = mySeedToSim.find(mySeedRef);
+
+      edm::RefToBase<reco::Track> seedRef(TrackCollectionHandle,j);
+      reco::RecoToSimCollection::const_iterator iassoctrack = myTrackToSim.find(seedRef);
 
       // Wert der Varib in Tree datenstruktur kopieren
       //          for (int k = 0; track_varib_nr; ++k){
@@ -261,14 +271,13 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       assoc_track[5] = gsfTrack.dz();
       assoc_track[6] = gsfTrack.numberOfValidHits();
 
-      if (iassoc != mySeedToSim.end()){
-//        for ( size_t i=0; i< (*iassoc).val.size(); ++i ) {
+      if (iassocseed != mySeedToSim.end()){
+//        for ( size_t i=0; i< (*iassocseed).val.size(); ++i ) {
 
-          std::cout << "Sim to reco found" << "\n"
-          << "qual = " << (*iassoc).val[j].second << "\n"
-          << "typeid((*iassoc).val[j]).name() = " << typeid((*iassoc).val[j]).name() << "\n" << std::endl;
-          if ((*iassoc).val[j].second == 1){
-            assoc_track[7] = float((*iassoc).val[j].second);
+          std::cout << "Sim to reco found" << "\n" << std::endl;
+
+          if ((*iassocseed).val[j].second == 1){
+            assoc_track[7] = float((*iassocseed).val[j].second);
             track_tree->Fill();
             std::cout << "assoc filled! " << std::endl;
           }
@@ -277,9 +286,18 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
             std::cout << "not filled, bad quality! " << std::endl;
           }
 
-          ++assocfound;
+          ++assocseedfound;
 
 //        }
+      }
+
+      if (iassoctrack != myTrackToSim.end()){
+
+        std::cout << "#myTrackToSim Size = " << myTrackToSim.size() << "\n"
+        << "std::typeid((*iassoctrack).first).name() = " << typeid(*iassoctrack).name() << "\n" << std::endl;
+        std::cout << "#iassoctrack qual = " << (*iassoctrack).val[j].second << std::endl;
+        std::cout << "iassoctrack qual works." << "\n" << std::endl;
+
       }
 
       else {
@@ -292,10 +310,10 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       }
   }
 
-  successrate = float(assocfound) / float(indexEvent);
+  successrate = float(assocseedfound) / float(indexEvent);
 
   std::cout << "indexEvent = " << indexEvent <<"\n"
-  << "assocfound = " <<assocfound << "\n"
+  << "assocseedfound = " <<assocseedfound << "\n"
   << "p found = " << successrate << "\n"
   <<"\n" << "------------------------------" << "\n" << std::endl;
 
