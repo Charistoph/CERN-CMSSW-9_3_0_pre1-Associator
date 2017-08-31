@@ -101,6 +101,8 @@ class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources>
     TTree * track_tree;
     int track_varib_nr;
     float assoc_track[9];
+    float seed_assoc_track[9];
+    float track_assoc_track[9];
 
 };
 
@@ -131,7 +133,7 @@ MyTrackAssociator::MyTrackAssociator(const edm::ParameterSet& iConfig):
     assoctrackfound = 0;
     seedsuccessrate = 0;
     tracksuccessrate = 0;
-    track_varib_nr = 8;
+    track_varib_nr = 9;
 
     TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
     tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
@@ -250,10 +252,10 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       reco::RecoToSimCollection::const_iterator iassoctrack = myTrackToSim.find(seedRef);
 
       // Wert der Varib in Tree datenstruktur kopieren
-      //          for (int k = 0; track_varib_nr; ++k){
-      //            std::cout << "Set to 0 loop! " << k << std::endl;
-      //            assoc_track[k] = 0;
-      //          }
+//          for (int k = 0; track_varib_nr; ++k){
+//            std::cout << "Set to 0 loop! " << k << std::endl;
+//            assoc_track[k] = 0;
+//          }
       assoc_track[0] = 0;
       assoc_track[1] = 0;
       assoc_track[2] = 0;
@@ -263,6 +265,27 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       assoc_track[6] = 0;
       assoc_track[7] = 0;
       assoc_track[8] = 0;
+
+      seed_assoc_track[0] = 0;
+      seed_assoc_track[1] = 0;
+      seed_assoc_track[2] = 0;
+      seed_assoc_track[3] = 0;
+      seed_assoc_track[4] = 0;
+      seed_assoc_track[5] = 0;
+      seed_assoc_track[6] = 0;
+      seed_assoc_track[7] = 0;
+      seed_assoc_track[8] = 0;
+
+      track_assoc_track[0] = 0;
+      track_assoc_track[1] = 0;
+      track_assoc_track[2] = 0;
+      track_assoc_track[3] = 0;
+      track_assoc_track[4] = 0;
+      track_assoc_track[5] = 0;
+      track_assoc_track[6] = 0;
+      track_assoc_track[7] = 0;
+      track_assoc_track[8] = 0;
+
 
       std::cout << "assoc_track set to 0 worked! " << std::endl;
 
@@ -281,6 +304,14 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
             if ((*iassocseed).val[j].second == 1){
                 assoc_track[7] = float((*iassocseed).val[j].second);
                 std::cout << "assocseed filled! " << "\n" << std::endl;
+
+                const edm::Ref<TrackingParticleCollection> tref_seed = (*iassocseed).val[j].first;
+                seed_assoc_track[0] = tref_seed->pt();
+                seed_assoc_track[1] = tref_seed->phi();
+                seed_assoc_track[2] = tref_seed->eta();
+                seed_assoc_track[3] = tref_seed->charge();
+                seed_assoc_track[6] = tref_seed->numberOfTrackerLayers();
+
             }
 
             else {
@@ -306,6 +337,13 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
           if ((*iassoctrack).val[j].second == 1){
               assoc_track[8] = float((*iassoctrack).val[j].second);
               std::cout << "assoctrack filled! " << "\n" << std::endl;
+
+              const edm::Ref<TrackingParticleCollection> tref_track = (*iassoctrack).val[j].first;
+              track_assoc_track[0] = tref_track->pt();
+              track_assoc_track[1] = tref_track->phi();
+              track_assoc_track[2] = tref_track->eta();
+              track_assoc_track[3] = tref_track->charge();
+              track_assoc_track[6] = tref_track->numberOfTrackerLayers();
           }
 
           else {
@@ -351,6 +389,8 @@ MyTrackAssociator::beginJob()
   edm::Service<TFileService> fs;
   track_tree = fs->make<TTree>("track_associator_tree","Associator tree with one branch" );
   track_tree->Branch("assoc_track", &assoc_track, "assoc_track[9]/F");
+  track_tree->Branch("seed_assoc_track", &seed_assoc_track, "seed_assoc_track[9]/F");
+  track_tree->Branch("track_assoc_track", &track_assoc_track, "track_assoc_track[9]/F");
 
 }
 
