@@ -8,6 +8,7 @@ from math import sqrt,pi
 
 # define Histo Draw
 def HistoDraw(track_name,track,variable_name):
+    track.GetMinimum(0.)
     track.Draw()
     ROOT.gPad.Update()
     c.SaveAs(outputpath + "/" + track_name + "_" + variable_name + ".png")
@@ -26,10 +27,11 @@ def HistoFill(event,pt,phi,eta,numberOfValidHits):
 #    2 = seed and track associated
 def MakeHisto(track_name,assoc_para):
 
+# n pins, low, up
     pt = ROOT.TH1F( track_name + "_pt", track_name + "_pt", 100, 0.0, 100.0)
-    phi = ROOT.TH1F( track_name + "_phi", track_name + "_phi", 3, -3, 3)
-    eta = ROOT.TH1F( track_name + "_eta", track_name + "_eta", 3, -3, 3)
-    numberOfValidHits = ROOT.TH1F( track_name + "_numberOfValidHits", track_name + "_numberOfValidHits", 100, 0.0, 100.0)
+    phi = ROOT.TH1F( track_name + "_phi", track_name + "_phi", 25, -3.2, 3.2)
+    eta = ROOT.TH1F( track_name + "_eta", track_name + "_eta", 25, -2.5, 2.5)
+    numberOfValidHits = ROOT.TH1F( track_name + "_numberOfValidHits", track_name + "_numberOfValidHits", 25, 0.0, 25.0)
 
     print "Histos initiated."
 
@@ -90,8 +92,8 @@ c = ROOT.TCanvas( "c", "c", 800, 800)
 
 # call Make Histo function
 MakeHisto("non_assoc_track",0)
-MakeHisto("seed_assoc_track",1)
-MakeHisto("all_assoc_track",2)
+#MakeHisto("seed_assoc_track",1)
+#MakeHisto("all_assoc_track",2)
 
 print "All Histos printed."
 
