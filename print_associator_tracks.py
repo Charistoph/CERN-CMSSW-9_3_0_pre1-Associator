@@ -38,7 +38,7 @@ def MakeAssocParaHistos(branch_variable,track_name,assoc_para):
     eta = ROOT.TH1F( track_name + "_eta", track_name + "_eta", 25, -2.5, 2.5)
     numberOfValidHits = ROOT.TH1F( track_name + "_numberOfValidHits", track_name + "_numberOfValidHits", 25, 0.0, 25.0)
 
-    print "Histos initiated."
+    print "AssocPara Histos initiated."
 
     if assoc_para == 0:
         print "Making histogramms for non associated tracks"
@@ -68,13 +68,13 @@ def MakeQualHistos(branch_variable,track_name):
     seed_qual = ROOT.TH1F( track_name + "_seed_qual", track_name + "_seed_qual", 3, -1.0, 2.0)
     track_qual = ROOT.TH1F( track_name + "_track_qual", track_name + "_track_qual", 3, -1.0, 2.0)
 
-    print "Histo initiated."
+    print "Qual Histos initiated."
 
     for event in tree:
         seed_qual.Fill(eval("event." + branch_variable + "[7]"))
         track_qual.Fill(eval("event." + branch_variable + "[8]"))
 
-    print "Histo filled."
+    print "Histos filled."
 
 # Calling Draw Function
     HistoDraw(track_name,seed_qual,"seed_qual")
@@ -82,6 +82,23 @@ def MakeQualHistos(branch_variable,track_name):
 
     print "Histos saved.\n"
 
+def MakeHistoIfNonZero(branch_variable,track_name):
+
+    print "NonZero Histo initiated."
+
+# parameters: n pins, low, up
+    pt = ROOT.TH1F( track_name + "_pt", track_name + "_pt", 100, 0.0, 100.0)
+    phi = ROOT.TH1F( track_name + "_phi", track_name + "_phi", 25, -3.2, 3.2)
+    eta = ROOT.TH1F( track_name + "_eta", track_name + "_eta", 25, -2.5, 2.5)
+    numberOfValidHits = ROOT.TH1F( track_name + "_numberOfValidHits", track_name + "_numberOfValidHits", 25, 0.0, 25.0)
+
+    for event in tree:
+        if (eval("event." + branch_variable + "[0]") != 0):
+            FillStandardHistos(branch_variable,event,pt,phi,eta,numberOfValidHits)
+
+    print "Histos filled."
+    DrawStandardHistos(track_name,pt,phi,eta,numberOfValidHits)
+    print "Histos saved.\n"
 
 #-------------------------------------------------------------------------------
 # main code
@@ -112,6 +129,8 @@ MakeAssocParaHistos("assoc_track","non_assoc_track",0)
 MakeAssocParaHistos("assoc_track","seed_assoc_track",1)
 MakeAssocParaHistos("assoc_track","all_assoc_track",2)
 MakeQualHistos("assoc_track","all_tracks")
+MakeHistoIfNonZero("seed_assoc_tp","seed_assoc_tp")
+MakeHistoIfNonZero("track_assoc_tp","track_assoc_tp")
 
 print "All Histos printed."
 
