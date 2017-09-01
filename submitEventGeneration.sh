@@ -4,7 +4,7 @@
 cd $WORKDIR
 #cd /tmp/cbernkop
 cd /afs/cern.ch/user/c/cbernkop/ComparingTracks/CMSSW_9_3_0_pre1/src/
-cmsenv
+eval `scramv1 runtime -sh`
 cd $WORKDIR
 #cd /tmp/cbernkop
 cmsRun /afs/cern.ch/user/c/cbernkop/ComparingTracks/CMSSW_9_3_0_pre1/src/10001.0_SingleElectronPt10+SingleElectronPt10_pythia8_2017_GenSimFull+DigiFull_2017+RecoFull_2017+ALCAFull_2017+HARVESTFull_2017/SingleElectronPt10_pythia8_cfi_GEN_SIM.py
