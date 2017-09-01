@@ -6,28 +6,33 @@ from math import sqrt,pi
 #-------------------------------------------------------------------------------
 # Define Funcitons
 
-# define Histo Draw
+# Draw One Histo
 def HistoDraw(track_name,track,variable_name):
     track.GetMinimum(0.)
     track.Draw()
     ROOT.gPad.Update()
     c.SaveAs(outputpath + "/" + track_name + "_" + variable_name + ".png")
 
-# define Histo Fill
-def HistoFill(event,pt,phi,eta,numberOfValidHits):
-    pt.Fill(event.assoc_track[0])
-    phi.Fill(event.assoc_track[1])
-    eta.Fill(event.assoc_track[2])
-    numberOfValidHits.Fill(event.assoc_track[6])
+def FillStandardHistos(branch_variable,event,pt,phi,eta,numberOfValidHits):
+    pt.Fill(eval("event." + branch_variable + "[0]"))
+    phi.Fill(eval("event." + branch_variable + "[1]"))
+    eta.Fill(eval("event." + branch_variable + "[2]"))
+    numberOfValidHits.Fill(eval("event." + branch_variable + "[6]"))
 
-# define histograms
+def DrawStandardHistos(track_name,pt,phi,eta,numberOfValidHits):
+    HistoDraw(track_name,pt,"pt")
+    HistoDraw(track_name,phi,"phi")
+    HistoDraw(track_name,eta,"eta")
+    HistoDraw(track_name,numberOfValidHits,"numberOfValidHits")
+
+# define assoc para histograms
 # assoc_para:
 #    0 = seed and track not associated
 #    1 = seed associated, track not associated
 #    2 = seed and track associated
-def MakeHisto(track_name,assoc_para):
+def MakeAssocParaHistos(branch_variable,track_name,assoc_para):
 
-# n pins, low, up
+# parameters: n pins, low, up
     pt = ROOT.TH1F( track_name + "_pt", track_name + "_pt", 100, 0.0, 100.0)
     phi = ROOT.TH1F( track_name + "_phi", track_name + "_phi", 25, -3.2, 3.2)
     eta = ROOT.TH1F( track_name + "_eta", track_name + "_eta", 25, -2.5, 2.5)
@@ -38,33 +43,45 @@ def MakeHisto(track_name,assoc_para):
     if assoc_para == 0:
         print "Making histogramms for non associated tracks"
         for event in tree:
-            if (event.assoc_track[7] == -1 and event.assoc_track[8] == -1):
-# Calling Fill Function
-                HistoFill(event,pt,phi,eta,numberOfValidHits)
+            if (eval("event." + branch_variable + "[7]") == -1 and eval("event." + branch_variable + "[8]") == -1):
+                FillStandardHistos(branch_variable,event,pt,phi,eta,numberOfValidHits)
 
     if assoc_para == 1:
         print "Making histogramms for seed associated, track non associated tracks"
         for event in tree:
-            if (event.assoc_track[7] == 1 and event.assoc_track[8] == -1):
-# Calling Fill Function
-                HistoFill(event,pt,phi,eta,numberOfValidHits)
+            if (eval("event." + branch_variable + "[7]") == 1 and eval("event." + branch_variable + "[8]") == -1):
+                FillStandardHistos(branch_variable,event,pt,phi,eta,numberOfValidHits)
 
     if assoc_para == 2:
         print "Making histogramms for seed and track associated tracks"
         for event in tree:
-            if (event.assoc_track[7] == 1 and event.assoc_track[8] == 1):
-# Calling Fill Function
-                HistoFill(event,pt,phi,eta,numberOfValidHits)
+            if (eval("event." + branch_variable + "[7]") == 1 and eval("event." + branch_variable + "[8]") == 1):
+                FillStandardHistos(branch_variable,event,pt,phi,eta,numberOfValidHits)
 
     print "Histos filled."
+    DrawStandardHistos(track_name,pt,phi,eta,numberOfValidHits)
+    print "Histos saved.\n"
+
+def MakeQualHistos(branch_variable,track_name):
+
+# n pins, low, up
+    seed_qual = ROOT.TH1F( track_name + "_seed_qual", track_name + "_seed_qual", 3, -1.0, 2.0)
+    track_qual = ROOT.TH1F( track_name + "_track_qual", track_name + "_track_qual", 3, -1.0, 2.0)
+
+    print "Histo initiated."
+
+    for event in tree:
+        seed_qual.Fill(eval("event." + branch_variable + "[7]"))
+        track_qual.Fill(eval("event." + branch_variable + "[8]"))
+
+    print "Histo filled."
 
 # Calling Draw Function
-    HistoDraw(track_name,pt,"pt")
-    HistoDraw(track_name,phi,"phi")
-    HistoDraw(track_name,eta,"eta")
-    HistoDraw(track_name,numberOfValidHits,"numberOfValidHits")
+    HistoDraw(track_name,seed_qual,"seed_qual")
+    HistoDraw(track_name,track_qual,"track_qual")
 
     print "Histos saved.\n"
+
 
 #-------------------------------------------------------------------------------
 # main code
@@ -91,9 +108,10 @@ print "\nPath and file routine complete.\n"
 c = ROOT.TCanvas( "c", "c", 800, 800)
 
 # call Make Histo function
-MakeHisto("non_assoc_track",0)
-#MakeHisto("seed_assoc_track",1)
-#MakeHisto("all_assoc_track",2)
+MakeAssocParaHistos("assoc_track","non_assoc_track",0)
+MakeAssocParaHistos("assoc_track","seed_assoc_track",1)
+MakeAssocParaHistos("assoc_track","all_assoc_track",2)
+MakeQualHistos("assoc_track","all_tracks")
 
 print "All Histos printed."
 
