@@ -100,9 +100,9 @@ class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources>
 // ----------TTree Varibs ---------------------------
     TTree * track_tree;
     int track_varib_nr;
-    float assoc_track[9];
-    float seed_assoc_tp[9];
-//    float track_assoc_tp[9];
+    float gsf_track[9];
+    float seed_assoc_track[9];
+    float track_assoc_track[9];
 
 };
 
@@ -252,52 +252,59 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       edm::RefToBase<reco::Track> seedRef(TrackCollectionHandle,j);
       reco::RecoToSimCollection::const_iterator iassoctrack = myTrackToSim.find(seedRef);
 
+      std::cout << "GsfTrackCollectionHandle->size() = " << GsfTrackCollectionHandle->size() << std::endl;
+      std::cout << "TrajectorySeedHandle->size() = " << TrajectorySeedHandle->size() << std::endl;
+//      std::cout << "(*iassocseed).val.size() = " << (*iassocseed).val.size() << std::endl;
+      std::cout << "TrackCollectionHandle->size() = " << TrackCollectionHandle->size() << std::endl;
+//      std::cout << "(*iassoctrack).val.size() = " << (*iassoctrack).val.size() << std::endl;
+
+//      std::cout << j << " " << (*iassocseed).val->size() << std::endl;
       // Wert der Varib in Tree datenstruktur kopieren
 //          for (int k = 0; track_varib_nr; ++k){
 //            std::cout << "Set to 0 loop!" << k << std::endl;
-//            assoc_track[k] = 0;
+//            gsf_track[k] = 0;
 //          }
-      assoc_track[0] = 0;
-      assoc_track[1] = 0;
-      assoc_track[2] = 0;
-      assoc_track[3] = 0;
-      assoc_track[4] = 0;
-      assoc_track[5] = 0;
-      assoc_track[6] = 0;
-      assoc_track[7] = 0;
-      assoc_track[8] = 0;
+      gsf_track[0] = 0;
+      gsf_track[1] = 0;
+      gsf_track[2] = 0;
+      gsf_track[3] = 0;
+      gsf_track[4] = 0;
+      gsf_track[5] = 0;
+      gsf_track[6] = 0;
+      gsf_track[7] = 0;
+      gsf_track[8] = 0;
 
-      seed_assoc_tp[0] = 0;
-      seed_assoc_tp[1] = 0;
-      seed_assoc_tp[2] = 0;
-      seed_assoc_tp[3] = 0;
-      seed_assoc_tp[4] = 0;
-      seed_assoc_tp[5] = 0;
-      seed_assoc_tp[6] = 0;
-      seed_assoc_tp[7] = 0;
-      seed_assoc_tp[8] = 0;
+      seed_assoc_track[0] = 0;
+      seed_assoc_track[1] = 0;
+      seed_assoc_track[2] = 0;
+      seed_assoc_track[3] = 0;
+      seed_assoc_track[4] = 0;
+      seed_assoc_track[5] = 0;
+      seed_assoc_track[6] = 0;
+      seed_assoc_track[7] = 0;
+      seed_assoc_track[8] = 0;
 
-//      track_assoc_tp[0] = 0;
-//      track_assoc_tp[1] = 0;
-//      track_assoc_tp[2] = 0;
-//      track_assoc_tp[3] = 0;
-//      track_assoc_tp[4] = 0;
-//      track_assoc_tp[5] = 0;
-//      track_assoc_tp[6] = 0;
-//      track_assoc_tp[7] = 0;
-//      track_assoc_tp[8] = 0;
+      track_assoc_track[0] = 0;
+      track_assoc_track[1] = 0;
+      track_assoc_track[2] = 0;
+      track_assoc_track[3] = 0;
+      track_assoc_track[4] = 0;
+      track_assoc_track[5] = 0;
+      track_assoc_track[6] = 0;
+      track_assoc_track[7] = 0;
+      track_assoc_track[8] = 0;
 
       std::cout << "all track set to 0 worked! Loop Nr = " << j << std::endl;
 
-      assoc_track[0] = gsfTrack.pt();
-      assoc_track[1] = gsfTrack.phi();
-      assoc_track[2] = gsfTrack.eta();
-      assoc_track[3] = gsfTrack.charge();
-      assoc_track[4] = gsfTrack.dxy();
-      assoc_track[5] = gsfTrack.dz();
-      assoc_track[6] = gsfTrack.numberOfValidHits();
+      gsf_track[0] = gsfTrack.pt();
+      gsf_track[1] = gsfTrack.phi();
+      gsf_track[2] = gsfTrack.eta();
+      gsf_track[3] = gsfTrack.charge();
+      gsf_track[4] = gsfTrack.dxy();
+      gsf_track[5] = gsfTrack.dz();
+      gsf_track[6] = gsfTrack.numberOfValidHits();
 
-      std::cout << "gsf (assoc_track) fill worked!" << std::endl;
+      std::cout << "gsf (gsf_track) fill worked!" << std::endl;
 
       if (iassocseed != mySeedToSim.end()){
 
@@ -311,23 +318,23 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 //            << "tref_seed->numberOfTrackerLayers() = " << tref_seed->numberOfTrackerLayers()
 //            << std::endl;
 
-            if ((*iassocseed).val[j].second == 1){
+            if ((*iassocseed).val[0].second == 1){
                 std::cout << "if entered!" << std::endl;
 
-                assoc_track[7] = float((*iassocseed).val[j].second);
+                gsf_track[7] = float((*iassocseed).val[0].second);
 
-                const edm::Ref<TrackingParticleCollection> tref_seed = (*iassocseed).val[j].first;
-                std::cout << "seed_assoc_tp[0] = pt" << tref_seed->pt() << std::endl;
-                std::cout << "seed_assoc_tp[1] = phi" << tref_seed->phi() << std::endl;
-                std::cout << "seed_assoc_tp[2] = eta" << tref_seed->eta() << std::endl;
-                std::cout << "seed_assoc_tp[3] = charge" << tref_seed->charge() << std::endl;
-                std::cout << "seed_assoc_tp[6] = numberOfTrackerLayers" << tref_seed->numberOfTrackerLayers() << std::endl;
+                const edm::Ref<TrackingParticleCollection> tref_seed = (*iassocseed).val[0].first;
+//                std::cout << "seed_assoc_track[0] = pt" << tref_seed->pt() << std::endl;
+//                std::cout << "seed_assoc_track[1] = phi" << tref_seed->phi() << std::endl;
+//                std::cout << "seed_assoc_track[2] = eta" << tref_seed->eta() << std::endl;
+//                std::cout << "seed_assoc_track[3] = charge" << tref_seed->charge() << std::endl;
+//                std::cout << "seed_assoc_track[6] = numberOfTrackerLayers" << tref_seed->numberOfTrackerLayers() << std::endl;
 
-//                seed_assoc_tp[0] = tref_seed->pt();
-//                seed_assoc_tp[1] = tref_seed->phi();
-//                seed_assoc_tp[2] = tref_seed->eta();
-//                seed_assoc_tp[3] = tref_seed->charge();
-//                seed_assoc_tp[6] = tref_seed->numberOfTrackerLayers();
+                seed_assoc_track[0] = tref_seed->pt();
+                seed_assoc_track[1] = tref_seed->phi();
+                seed_assoc_track[2] = tref_seed->eta();
+                seed_assoc_track[3] = tref_seed->charge();
+                seed_assoc_track[6] = tref_seed->numberOfTrackerLayers();
 
                 std::cout << "assocseed filled!" << std::endl;
             }
@@ -342,25 +349,25 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
       else {
           std::cout << "No sim to reco seed!" << std::endl;
-          assoc_track[7] = -1;
+          gsf_track[7] = -1;
       }
 
       if (iassoctrack != myTrackToSim.end()){
 
           std::cout << "Sim to reco track found!" << std::endl;
           std::cout << "#myTrackToSim Size = " << myTrackToSim.size() << std::endl;
-//        << "std::typeid((*iassoctrack).first).name() = " << typeid(*iassoctrack).name() << "\n" << std::endl;
-//          std::cout << "#iassoctrack qual = " << (*iassoctrack).val[j].second << std::endl;
+          std::cout << "std::typeid((*iassoctrack).first).name() = " << typeid(*iassoctrack).name() << "\n" << std::endl;
+          std::cout << "#iassoctrack qual = " << (*iassoctrack).val[0].second << std::endl;
 
-          if ((*iassoctrack).val[j].second == 1){
-              assoc_track[8] = float((*iassoctrack).val[j].second);
+          if ((*iassoctrack).val[0].second == 1){
+              gsf_track[8] = float((*iassoctrack).val[0].second);
 
-//              const edm::Ref<TrackingParticleCollection> tref_track = (*iassoctrack).val[j].first;
-//              track_assoc_tp[0] = tref_track->pt();
-//              track_assoc_tp[1] = tref_track->phi();
-//              track_assoc_tp[2] = tref_track->eta();
-//              track_assoc_tp[3] = tref_track->charge();
-//              track_assoc_tp[6] = tref_track->numberOfTrackerLayers();
+              const edm::Ref<TrackingParticleCollection> tref_track = (*iassoctrack).val[0].first;
+              track_assoc_track[0] = tref_track->pt();
+              track_assoc_track[1] = tref_track->phi();
+              track_assoc_track[2] = tref_track->eta();
+              track_assoc_track[3] = tref_track->charge();
+              track_assoc_track[6] = tref_track->numberOfTrackerLayers();
 
               std::cout << "assoctrack filled!" << std::endl;
           }
@@ -375,12 +382,12 @@ MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
       else {
           std::cout << "No sim to reco track!" << std::endl;
-          assoc_track[8] = -1;
+          gsf_track[8] = -1;
       }
 
 // to have quality information on both branches
-      seed_assoc_tp[7] = assoc_track[7];
-      seed_assoc_tp[8] = assoc_track[8];
+      seed_assoc_track[7] = gsf_track[7];
+      seed_assoc_track[8] = gsf_track[8];
 
       track_tree->Fill();
       std::cout << "all fills worked!" << "\n" << std::endl;
@@ -411,9 +418,9 @@ MyTrackAssociator::beginJob()
 // initialize tree
   edm::Service<TFileService> fs;
   track_tree = fs->make<TTree>("track_associator_tree","Associator tree with branches" );
-  track_tree->Branch("assoc_track", &assoc_track, "assoc_track[9]/F");
-  track_tree->Branch("seed_assoc_tp", &seed_assoc_tp, "seed_assoc_tp[9]/F");
-//  track_tree->Branch("track_assoc_tp", &track_assoc_tp, "track_assoc_tp[9]/F");
+  track_tree->Branch("gsf_track", &gsf_track, "gsf_track[9]/F");
+  track_tree->Branch("seed_assoc_track", &seed_assoc_track, "seed_assoc_track[9]/F");
+  track_tree->Branch("track_assoc_track", &track_assoc_track, "track_assoc_track[9]/F");
 
 }
 
