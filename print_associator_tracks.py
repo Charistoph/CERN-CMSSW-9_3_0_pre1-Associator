@@ -125,12 +125,15 @@ print "\nPath and file routine complete.\n"
 c = ROOT.TCanvas( "c", "c", 800, 800)
 
 # call Make Histo function
-MakeAssocParaHistos("assoc_track","non_assoc_track",0)
-MakeAssocParaHistos("assoc_track","seed_assoc_track",1)
-MakeAssocParaHistos("assoc_track","all_assoc_track",2)
-MakeQualHistos("assoc_track","all_tracks")
-MakeHistoIfNonZero("seed_assoc_tp","seed_assoc_tp")
-MakeHistoIfNonZero("track_assoc_tp","track_assoc_tp")
+# MakeAssocParaHistos(branch_variable,track_name,assoc_para)
+MakeAssocParaHistos("gsf_track","non_assoc_gsf_track",0)
+MakeAssocParaHistos("gsf_track","seed_assoc_gsf_track",1)
+MakeAssocParaHistos("gsf_track","all_assoc_gsf_track",2)
+# MakeQualHistos(branch_variable,track_name)
+MakeQualHistos("gsf_track","qual_all_gsf_tracks")
+# MakeHistoIfNonZero(branch_variable,track_name)
+MakeHistoIfNonZero("seed_assoc_track","seed_assoc_track")
+MakeHistoIfNonZero("track_assoc_track","track_assoc_track")
 
 print "All Histos printed."
 
