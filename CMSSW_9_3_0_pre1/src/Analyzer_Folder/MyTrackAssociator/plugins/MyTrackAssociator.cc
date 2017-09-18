@@ -52,6 +52,15 @@
   #include "FWCore/ServiceRegistry/interface/Service.h"
   #include "CommonTools/UtilAlgos/interface/TFileService.h"
 
+// Includes for Machine Learning
+//  #include "TrackingTools/​TrajectoryState/​interface/​TrajectoryStateOnSurface.h"
+  #include "RecoTracker/TrackProducer/interface/GsfTrackProducerBase.h"
+  #include "TrackingTools/GsfTools/interface/MultiGaussianState1D.h"
+  #include "TrackingTools/GsfTools/interface/GaussianSumUtilities1D.h"
+
+// Brauch ich die?
+  #include "FWCore/MessageLogger/interface/MessageLogger.h"
+
   //
   // class declaration
   //
@@ -256,42 +265,42 @@
         std::cout << "TrajectorySeedHandle->size() = " << TrajectorySeedHandle->size() << std::endl;
         std::cout << "TrackCollectionHandle->size() = " << TrackCollectionHandle->size() << std::endl;
 
-  //      std::cout << j << " " << (*iassocseed).val->size() << std::endl;
-        // Wert der Varib in Tree datenstruktur kopieren
-  //          for (int k = 0; track_varib_nr; ++k){
-  //            std::cout << "Set to 0 loop!" << k << std::endl;
-  //            gsf_track[k] = 0;
-  //          }
-        gsf_track[0] = 0;
-        gsf_track[1] = 0;
-        gsf_track[2] = 0;
-        gsf_track[3] = 0;
-        gsf_track[4] = 0;
-        gsf_track[5] = 0;
-        gsf_track[6] = 0;
-        gsf_track[7] = 0;
-        gsf_track[8] = 0;
-
-        seed_assoc_track[0] = 0;
-        seed_assoc_track[1] = 0;
-        seed_assoc_track[2] = 0;
-        seed_assoc_track[3] = 0;
-        seed_assoc_track[4] = 0;
-        seed_assoc_track[5] = 0;
-        seed_assoc_track[6] = 0;
-        seed_assoc_track[7] = 0;
-        seed_assoc_track[8] = 0;
-
-        track_assoc_track[0] = 0;
-        track_assoc_track[1] = 0;
-        track_assoc_track[2] = 0;
-        track_assoc_track[3] = 0;
-        track_assoc_track[4] = 0;
-        track_assoc_track[5] = 0;
-        track_assoc_track[6] = 0;
-        track_assoc_track[7] = 0;
-        track_assoc_track[8] = 0;
-
+        for (int k = 0; k < track_varib_nr; k++){
+          std::cout << "Set to 0 loop!" << k << std::endl;
+          gsf_track[k] = 0;
+          seed_assoc_track[k] = 0;
+          track_assoc_track[k] = 0;
+        }
+//        gsf_track[0] = 0;
+//        gsf_track[1] = 0;
+//        gsf_track[2] = 0;
+//        gsf_track[3] = 0;
+//        gsf_track[4] = 0;
+//        gsf_track[5] = 0;
+//        gsf_track[6] = 0;
+//        gsf_track[7] = 0;
+//        gsf_track[8] = 0;
+//
+//        seed_assoc_track[0] = 0;
+//        seed_assoc_track[1] = 0;
+//        seed_assoc_track[2] = 0;
+//        seed_assoc_track[3] = 0;
+//        seed_assoc_track[4] = 0;
+//        seed_assoc_track[5] = 0;
+//        seed_assoc_track[6] = 0;
+//        seed_assoc_track[7] = 0;
+//        seed_assoc_track[8] = 0;
+//
+//        track_assoc_track[0] = 0;
+//        track_assoc_track[1] = 0;
+//        track_assoc_track[2] = 0;
+//        track_assoc_track[3] = 0;
+//        track_assoc_track[4] = 0;
+//        track_assoc_track[5] = 0;
+//        track_assoc_track[6] = 0;
+//        track_assoc_track[7] = 0;
+//        track_assoc_track[8] = 0;
+//
         std::cout << "all track set to 0 worked! Loop Nr = " << j << std::endl;
 
         gsf_track[0] = gsfTrack.pt();
