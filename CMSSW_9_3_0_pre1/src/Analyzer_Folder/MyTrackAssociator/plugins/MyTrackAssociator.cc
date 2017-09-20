@@ -109,7 +109,6 @@
       edm::ESHandle<GlobalTrackingGeometry> trackingGeometryHandle_;
       edm::ESHandle<MagneticField> magneticFieldHandle_;
 
-
   // ----------counting variables ---------------------------
       int indexEvent;
       int assocseedfound;
@@ -120,11 +119,11 @@
   // ----------TTree Varibs ---------------------------
       TTree * track_tree;
       int track_varib_nr;
-//      int ml_varib_nr;
+      int ml_varib_nr;
       float gsf_track[9];
       float seed_assoc_track[9];
       float track_assoc_track[9];
-//      float ml_track[9];
+      float ml_track[28];
   };
 
   //
@@ -155,7 +154,7 @@
       seedsuccessrate = 0;
       tracksuccessrate = 0;
       track_varib_nr = 9;
-//      ml_varib_nr = 16;
+      ml_varib_nr = 28;
 
       TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
       tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
@@ -266,9 +265,13 @@
         std::cout << "TrackCollectionHandle->size() = " << TrackCollectionHandle->size() << std::endl;
 
         for (int k = 0; k < track_varib_nr; k++){
-          gsf_track[k] = 0;
-          seed_assoc_track[k] = 0;
-          track_assoc_track[k] = 0;
+            gsf_track[k] = 0;
+            seed_assoc_track[k] = 0;
+            track_assoc_track[k] = 0;
+        }
+
+        for (int k = 0; k < ml_varib_nr; k++){
+            ml_track[k] = 0;
         }
 
         std::cout << "all track set to 0 worked! Loop Nr = " << j << std::endl;
@@ -322,44 +325,23 @@
                 seed_assoc_track[6] = tref_seed->numberOfTrackerLayers();
                 std::cout << "seed_assoc_track writen!" << std::endl;
 
-                std::cout << "(*iassocseed).val[j].second = " << (*iassocseed).val[j].second << "\n"
-                << "tref_seed->pt() = " << tref_seed->pt() << "\n"
-                << "tref_seed->phi() = " << tref_seed->phi() << "\n"
-                << "tref_seed->eta() = " << tref_seed->eta() << "\n"
-                << "tref_seed->charge() = " << tref_seed->charge() << "\n"
-                << "tref_seed->x^2+y^2 = " << tref_seed->vx()*tref_seed->vx()+tref_seed->vy()*tref_seed->vy() << "\n"
-                << "tref_seed->numberOfTrackerLayers() = " << tref_seed->numberOfTrackerLayers()
-                << std::endl;
+//                std::cout << "(*iassocseed).val[j].second = " << (*iassocseed).val[j].second << "\n"
+//                << "tref_seed->pt() = " << tref_seed->pt() << "\n"
+//                << "tref_seed->phi() = " << tref_seed->phi() << "\n"
+//                << "tref_seed->eta() = " << tref_seed->eta() << "\n"
+//                << "tref_seed->charge() = " << tref_seed->charge() << "\n"
+//                << "tref_seed->x^2+y^2 = " << tref_seed->vx()*tref_seed->vx()+tref_seed->vy()*tref_seed->vy() << "\n"
+//                << "tref_seed->numberOfTrackerLayers() = " << tref_seed->numberOfTrackerLayers()
+//                << std::endl;
 
                 ++assocseedfound;
                 std::cout << "assocseedfound # increased!" << "\n" << std::endl;
 
-                // GsfTrackToVtx loop code
-                for ( edm::View<reco::GsfTrack>::const_iterator igsf=gsfTrackHandle->begin();
-                igsf!=gsfTrackHandle->end(); ++igsf ) {
-
-                    if ((tref_seed->vx()*tref_seed->vx()+tref_seed->vy()*tref_seed->vy())<0.0625) {
-
-                        TrajectoryStateOnSurface innTSOS = mtst.innerStateOnSurface(*igsf);
-                        // Changed from GlobalPoint(0.,0.,0.)
-                        TrajectoryStateOnSurface vtxTSOS = mtst.extrapolatedState(innTSOS,GlobalPoint(tref_seed->vx(),tref_seed->vy(),tref_seed->vz()));
-                        std::cout << "GsfTrackToVtx code" << "\n" << "Gsf pt = " << igsf->pt()
-                        << ", innTSOS comp.size = " << innTSOS.components().size()
-                        << ", vtxTSOS comp.size = " << vtxTSOS.components().size() << "\n" << std::endl;
-                        // LocalPoint lp(vtxTSOS.surface().toLocal(GlobalPoint(0.,0.,0.)));
-                        // std::cout << "   " << lp.x() << " " << lp.y() << " " << lp.z() << std::endl;
-                        // GlobalVector gy(vtxTSOS.surface().toGlobal(LocalVector(0.,1.,0.)));
-                        // std::cout << "   " << gy.x() << " " << gy.y() << " " << gy.z() << std::endl;
-                    }
-                    else {
-                        std::cout << "Gsf Vertex too far from origin, no Gaussian Mix produced" << "\n" << std::endl;
-                    }
-                }
             }
-        }
-        else {
-            std::cout << "No sim to reco seed!" << "\n" << std::endl;
-            gsf_track[7] = -1;
+            else {
+                std::cout << "No sim to reco seed!" << "\n" << std::endl;
+                gsf_track[7] = -1;
+            }
         }
 
         if (iassoctrack != myTrackToSim.end()){
@@ -397,8 +379,101 @@
                 track_assoc_track[6] = tref_track->numberOfTrackerLayers();
                 std::cout << "track_assoc_track writen!" << std::endl;
 
-                ++assoctrackfound;
-                std::cout << "assoctrackfound # incresed!" << "\n" << std::endl;
+//                std::cout
+//                << "tref_track->pt() = " << tref_track->pt() << "\n"
+//                << "tref_track->px() = " << tref_track->px() << "\n"
+//                << "tref_track->py() = " << tref_track->py() << "\n"
+//                << "tref_track->pz() = " << tref_track->pz() << "\n"
+//                << "tref_track->vertex() = " << tref_track->vertex() << "\n"
+//                << "tref_track->vx() = " << tref_track->vx() << "\n"
+//                << "tref_track->vy() = " << tref_track->vy() << "\n"
+//                << "tref_track->vz() = " << tref_track->vz() << "\n"
+//                << "tref_track->phi() = " << tref_track->phi() << "\n"
+//                << "tref_track->eta() = " << tref_track->eta() << "\n"
+//                << "tref_track->charge() = " << tref_track->charge() << "\n"
+//                << "tref_track->numberOfTrackerLayers() = " << tref_track->numberOfTrackerLayers() << "\n"
+//                << std::endl;
+
+//                ml_track[0] = tref_track->pt();
+//                ml_track[0] = tref_track->px();
+//                ml_track[0] = tref_track->py();
+//                ml_track[0] = tref_track->pz();
+//                ml_track[0] = tref_track->px();
+//                ml_track[0] = tref_track->py();
+//                ml_track[0] = tref_track->pz();
+//                ml_track[1] = tref_track->phi();
+//                ml_track[2] = tref_track->eta();
+//                ml_track[3] = tref_track->charge();
+//                ml_track[6] = tref_track->numberOfTrackerLayers();
+
+                // GsfTrackToVtx loop code
+                for ( edm::View<reco::GsfTrack>::const_iterator igsf=gsfTrackHandle->begin();
+                igsf!=gsfTrackHandle->end(); ++igsf ) {
+
+                    if ((tref_track->vx()*tref_track->vx()+tref_track->vy()*tref_track->vy())<0.0625) {
+
+                        TrajectoryStateOnSurface innTSOS = mtst.innerStateOnSurface(*igsf);
+                        // Changed from GlobalPoint(0.,0.,0.)
+                        TrajectoryStateOnSurface vtxTSOS = mtst.extrapolatedState(innTSOS,GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz()));
+                        std::cout << "GsfTrackToVtx code" << "\n"
+                        << "innTSOS comp.size = " << innTSOS.components().size() << "\n"
+                        << "vtxTSOS comp.size = " << vtxTSOS.components().size() << "\n"
+//                        << "vtxTSOS localParameters().vector() = " << vtxTSOS.localParameters().vector() << "\n"
+//                        << "vtxTSOS localError().matrix() = " << vtxTSOS.localError().matrix() << "\n"
+                        << std::endl;
+
+                        std::cout
+                        << "Gsf pt = " << igsf->pt() << "\n"
+                        << "Gsf px = " << igsf->px() << "\n"
+                        << "Gsf py = " << igsf->py() << "\n"
+                        << "Gsf pz = " << igsf->pz() << "\n"
+                        << std::endl;
+
+                        std::cout
+                        << "tref_track->pt() = " << tref_track->pt() << "\n"
+                        << "tref_track->px() = " << tref_track->px() << "\n"
+                        << "tref_track->py() = " << tref_track->py() << "\n"
+                        << "tref_track->pz() = " << tref_track->pz() << "\n"
+                        << std::endl;
+
+                        LocalPoint assocp(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->px(),tref_track->py(),tref_track->pz())));
+                        std::cout << "toLocal seed g p -> l p = " << assocp.x() << " " << assocp.y() << " " << assocp.z() << std::endl;
+
+                        LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
+                        std::cout << "toLocal seed g v -> l v = " << assocv.x() << " " << assocv.y() << " " << assocv.z() << std::endl;
+
+// q_sim/p_sim, px_local_sim/pz_local_sim, py_local_sim/pz_local_sim, vx_local_sim, vy_local_sim
+//<< "q_sim/p_sim = " << "???" << "\n"
+//<< "px_local_sim/pz_local_sim = " << assocpy.x()/assocpx.z() << "\n"
+//<< "py_local_sim/pz_local_sim = " << tref_track->py() << "\n"
+//<< "vx_local_sim = " << assocvx.z() << "\n"
+//<< "vy_local_sim = " << assocvy.x() << "\n"
+
+                        std::cout << "\n"
+                        << "q_sim/p_sim, px_local_sim/pz_local_sim, py_local_sim/pz_local_sim, vx_local_sim, vy_local_sim" << "\n"
+                        << "tref_track->charge()/tref_track->p() assocp.x()/assocp.z() -assocp.y()/assocp.z() assocv.x() assocv.y()" << "\n"
+                        << "                                     "
+                        << tref_track->charge()/tref_track->p() << ", " << assocp.x()/assocp.z() << ", " << -assocp.y()/assocp.z() << ", "
+                        << assocv.x() << ", " << assocv.y() << "\n"
+                        << "vtxTSOS localParameters().vector() = " << vtxTSOS.localParameters().vector() << "\n"
+                        << std::endl;
+
+                        for (size_t ic=0; ic<vtxTSOS.components().size(); ++ic ) {
+                            std::cout << vtxTSOS.components[ic].localParameters().vector() << std::endl;
+                        }
+
+//                        LocalPoint lp(vtxTSOS.surface().toLocal(GlobalPoint(0.,0.,0.)));
+//                        std::cout << "   " << lp.x() << " " << lp.y() << " " << lp.z() << std::endl;
+//                        GlobalVector gy(vtxTSOS.surface().toGlobal(LocalVector(0.,1.,0.)));
+//                        std::cout << "   " << gy.x() << " " << gy.y() << " " << gy.z() << std::endl;
+                    }
+                    else {
+                        std::cout << "Gsf Vertex too far from origin, no Gaussian Mix produced" << "\n" << std::endl;
+                    }
+
+                    ++assoctrackfound;
+                    std::cout << "assoctrackfound # incresed!" << "\n" << std::endl;
+                }
             }
         }
         else {
@@ -443,7 +518,7 @@
     track_tree->Branch("gsf_track", &gsf_track, "gsf_track[9]/F");
     track_tree->Branch("seed_assoc_track", &seed_assoc_track, "seed_assoc_track[9]/F");
     track_tree->Branch("track_assoc_track", &track_assoc_track, "track_assoc_track[9]/F");
-//    track_tree->Branch("ml_track", &ml_track, "ml_track[9]/F");
+    track_tree->Branch("ml_track", &ml_track, "ml_track[28]/F");
   }
 
   // ------------ method called once each job just after ending the event loop  ------------
