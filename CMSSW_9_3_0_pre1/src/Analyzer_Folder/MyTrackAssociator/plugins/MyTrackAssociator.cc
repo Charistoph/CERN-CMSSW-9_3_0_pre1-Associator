@@ -422,44 +422,44 @@
 //                        << "vtxTSOS localError().matrix() = " << vtxTSOS.localError().matrix() << "\n"
                         << std::endl;
 
-                        std::cout
-                        << "Gsf pt = " << igsf->pt() << "\n"
-                        << "Gsf px = " << igsf->px() << "\n"
-                        << "Gsf py = " << igsf->py() << "\n"
-                        << "Gsf pz = " << igsf->pz() << "\n"
-                        << std::endl;
+//                        std::cout
+//                        << "Gsf pt = " << igsf->pt() << "\n"
+//                        << "Gsf px = " << igsf->px() << "\n"
+//                        << "Gsf py = " << igsf->py() << "\n"
+//                        << "Gsf pz = " << igsf->pz() << "\n"
+//                        << std::endl;
+//
+//                        std::cout
+//                        << "tref_track->pt() = " << tref_track->pt() << "\n"
+//                        << "tref_track->px() = " << tref_track->px() << "\n"
+//                        << "tref_track->py() = " << tref_track->py() << "\n"
+//                        << "tref_track->pz() = " << tref_track->pz() << "\n"
+//                        << std::endl;
 
-                        std::cout
-                        << "tref_track->pt() = " << tref_track->pt() << "\n"
-                        << "tref_track->px() = " << tref_track->px() << "\n"
-                        << "tref_track->py() = " << tref_track->py() << "\n"
-                        << "tref_track->pz() = " << tref_track->pz() << "\n"
-                        << std::endl;
-
-                        LocalPoint assocp(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->px(),tref_track->py(),tref_track->pz())));
-                        std::cout << "toLocal seed g p -> l p = " << assocp.x() << " " << assocp.y() << " " << assocp.z() << std::endl;
-
-                        LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
-                        std::cout << "toLocal seed g v -> l v = " << assocv.x() << " " << assocv.y() << " " << assocv.z() << std::endl;
-
-// q_sim/p_sim, px_local_sim/pz_local_sim, py_local_sim/pz_local_sim, vx_local_sim, vy_local_sim
-//<< "q_sim/p_sim = " << "???" << "\n"
-//<< "px_local_sim/pz_local_sim = " << assocpy.x()/assocpx.z() << "\n"
-//<< "py_local_sim/pz_local_sim = " << tref_track->py() << "\n"
-//<< "vx_local_sim = " << assocvx.z() << "\n"
-//<< "vy_local_sim = " << assocvy.x() << "\n"
-
-                        std::cout << "\n"
-                        << "q_sim/p_sim, px_local_sim/pz_local_sim, py_local_sim/pz_local_sim, vx_local_sim, vy_local_sim" << "\n"
-                        << "tref_track->charge()/tref_track->p() assocp.x()/assocp.z() -assocp.y()/assocp.z() assocv.x() assocv.y()" << "\n"
-                        << "                                     "
-                        << tref_track->charge()/tref_track->p() << ", " << assocp.x()/assocp.z() << ", " << -assocp.y()/assocp.z() << ", "
-                        << assocv.x() << ", " << assocv.y() << "\n"
-                        << "vtxTSOS localParameters().vector() = " << vtxTSOS.localParameters().vector() << "\n"
-                        << std::endl;
+                        std::cout << "Gsf component loop starts:" << "\n" << std::endl;
 
                         for (size_t ic=0; ic<vtxTSOS.components().size(); ++ic ) {
-                            std::cout << vtxTSOS.components[ic].localParameters().vector() << std::endl;
+//                              std::cout << vtxTSOS.components()[ic].localParameters().vector() << std::endl;
+
+                              LocalPoint assocp(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->px(),tref_track->py(),tref_track->pz())));
+//                              std::cout << "toLocal seed g p -> l p = " << assocp.x() << " " << assocp.y() << " " << assocp.z() << std::endl;
+
+                              LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
+//                              std::cout << "toLocal seed g v -> l v = " << assocv.x() << " " << assocv.y() << " " << assocv.z() << std::endl;
+
+                              std::cout << "\n"
+                              << "nc = vtxTSOS.components().size() = " << vtxTSOS.components().size() << "\n"
+                              << "ic = " << ic << "\n"
+                              << "vtxTSOS.components()[ic].weight() = " << vtxTSOS.components()[ic].weight() << "\n"
+
+                              << "q_sim/p_sim, px_local_sim/pz_local_sim, py_local_sim/pz_local_sim, vx_local_sim, vy_local_sim" << "\n"
+                              << "vtxTSOS localParameters().vector() = " << vtxTSOS.components()[ic].localParameters().vector() << "\n"
+                              << "vtxTSOS localParameters().matrix() = " << vtxTSOS.components()[ic].localError().matrix() << "\n"
+                              << "sim                                  "
+                              << tref_track->charge()/tref_track->p() << ", " << assocp.x()/assocp.z() << ", " << -assocp.y()/assocp.z() << ", "
+                              << assocv.x() << ", " << assocv.y() << "\n"
+                              << "tref_track->charge()/tref_track->p() assocp.x()/assocp.z() -assocp.y()/assocp.z() assocv.x() assocv.y()" << "\n"
+                              << std::endl;
                         }
 
 //                        LocalPoint lp(vtxTSOS.surface().toLocal(GlobalPoint(0.,0.,0.)));
@@ -472,7 +472,7 @@
                     }
 
                     ++assoctrackfound;
-                    std::cout << "assoctrackfound # incresed!" << "\n" << std::endl;
+                    std::cout << "assoctrackfound # increased!" << "\n" << std::endl;
                 }
             }
         }
