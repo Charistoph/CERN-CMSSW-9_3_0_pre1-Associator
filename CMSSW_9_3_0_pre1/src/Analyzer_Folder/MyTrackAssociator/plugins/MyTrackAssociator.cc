@@ -406,7 +406,28 @@
 //                        << "vtxTSOS localError().matrix() = " << vtxTSOS.localError().matrix() << "\n"
                         << std::endl;
 
-                        std::cout << "Gsf component loop starts:" << "\n" << std::endl;
+                        std::cout << "Gsf total mixture loop start" << std::endl;
+
+                        LocalVector assocp(vtxTSOS.surface().toLocal(GlobalVector(tref_track->px(),tref_track->py(),tref_track->pz())));
+                        LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
+
+                        size_nc_weight[0] = vtxTSOS.components().size();
+                        size_nc_weight[1] = 1;
+                        ic_para[0] = -1;
+
+                        localPars_ = vtxTSOS.localParameters().vector();
+                        localCov_ = vtxTSOS.localError().matrix();
+
+                        tp_track[0] = tref_track->charge()/tref_track->p();
+                        tp_track[1] = assocp.x()/assocp.z();
+                        tp_track[2] = -assocp.y()/assocp.z();
+                        tp_track[3] = assocv.x();
+                        tp_track[4] = assocv.y();
+
+                        track_tree->Fill();
+
+                        std::cout << "Gsf total mixture filled" << std::endl;
+                        std::cout << "Gsf component loop start" << "\n" << std::endl;
 
                         for (size_t ic=0; ic<vtxTSOS.components().size(); ++ic ) {
 
