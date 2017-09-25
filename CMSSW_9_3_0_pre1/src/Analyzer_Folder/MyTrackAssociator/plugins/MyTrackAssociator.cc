@@ -451,7 +451,6 @@
 //                              << "tref_track->charge()/tref_track->p() assocp.x()/assocp.z() -assocp.y()/assocp.z() assocv.x() assocv.y()" << "\n"
 //                              << std::endl;
 
-
                               size_nc_weight[0] = vtxTSOS.components().size();
                               size_nc_weight[1] = vtxTSOS.components()[ic].weight();
                               ic_para[0] = ic;
@@ -497,7 +496,7 @@
 //        track_assoc_track[7] = gsf_track[7];
 //        track_assoc_track[8] = gsf_track[8];
 
-        track_tree->Fill();
+//        track_tree->Fill();
         std::cout << "all fills worked!" << "\n" << std::endl;
     }
 
