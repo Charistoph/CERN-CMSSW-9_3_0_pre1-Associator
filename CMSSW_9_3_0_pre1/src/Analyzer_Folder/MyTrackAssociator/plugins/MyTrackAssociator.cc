@@ -124,7 +124,7 @@
       float seed_assoc_track[9];
       float track_assoc_track[9];
       float tp_track[5];
-      float size_nc_weight[2];
+      float size_nc_weight[3];
       int ic_para[1];
 
       AlgebraicVector5 localPars_;
@@ -279,6 +279,7 @@
 
         size_nc_weight[0] = 0;
         size_nc_weight[1] = 0;
+        size_nc_weight[2] = 0;
         ic_para[0] = 0;
 
         for (int k = 0; k < tp_varib_nr; k++){
@@ -411,8 +412,9 @@
                         LocalVector assocp(vtxTSOS.surface().toLocal(GlobalVector(tref_track->px(),tref_track->py(),tref_track->pz())));
                         LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
 
-                        size_nc_weight[0] = vtxTSOS.components().size();
-                        size_nc_weight[1] = 1;
+                        size_nc_weight[0] = j;
+                        size_nc_weight[1] = vtxTSOS.components().size();
+                        size_nc_weight[2] = 1;
                         ic_para[0] = -1;
 
                         localPars_ = vtxTSOS.localParameters().vector();
@@ -451,11 +453,12 @@
 //                              << "tref_track->charge()/tref_track->p() assocp.x()/assocp.z() -assocp.y()/assocp.z() assocv.x() assocv.y()" << "\n"
 //                              << std::endl;
 
-                              size_nc_weight[0] = vtxTSOS.components().size();
-                              size_nc_weight[1] = vtxTSOS.components()[ic].weight();
+                              size_nc_weight[0] = j;
+                              size_nc_weight[1] = vtxTSOS.components().size();
+                              size_nc_weight[2] = vtxTSOS.components()[ic].weight();
                               ic_para[0] = ic;
 
-                              std::cout << "size = " << typeid(vtxTSOS.components().size()).name() << "ic " << typeid(ic).name() << std::endl;
+//                              std::cout << "size = " << typeid(vtxTSOS.components().size()).name() << "ic " << typeid(ic).name() << std::endl;
 
                               localPars_ = vtxTSOS.components()[ic].localParameters().vector();
                               localCov_ = vtxTSOS.components()[ic].localError().matrix();
@@ -527,7 +530,7 @@
 //    track_tree->Branch("gsf_track", &gsf_track, "gsf_track[9]/F");
 //    track_tree->Branch("seed_assoc_track", &seed_assoc_track, "seed_assoc_track[9]/F");
 //    track_tree->Branch("track_assoc_track", &track_assoc_track, "track_assoc_track[9]/F");
-    track_tree->Branch("size_nc_weight", &size_nc_weight, "size_nc_weight[2]/F");
+    track_tree->Branch("size_nc_weight", &size_nc_weight, "size_nc_weight[3]/F");
     track_tree->Branch("ic_para", &ic_para, "ic_para[1]/I");
     track_tree->Branch("localPars",&localPars_);
     track_tree->Branch("localCov",&localCov_);
