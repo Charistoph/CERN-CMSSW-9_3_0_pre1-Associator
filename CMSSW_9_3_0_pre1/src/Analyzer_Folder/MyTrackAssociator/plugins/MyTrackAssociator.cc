@@ -19,10 +19,12 @@
 
   // system include files
   #include <memory>
+  #include <iostream>
 
   // user include files
   #include "FWCore/Framework/interface/Frameworkfwd.h"
   #include "FWCore/Framework/interface/one/EDAnalyzer.h"
+  #include "FWCore/Framework/interface/ESHandle.h"
 
   #include "FWCore/Framework/interface/Event.h"
   #include "FWCore/Framework/interface/MakerMacros.h"
@@ -51,6 +53,19 @@
   #include "TTree.h"
   #include "FWCore/ServiceRegistry/interface/Service.h"
   #include "CommonTools/UtilAlgos/interface/TFileService.h"
+
+// GsfTrackToVtx imports
+  #include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
+  #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
+
+  #include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
+  #include "MagneticField/Engine/interface/MagneticField.h"
+
+  #include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
+  #include "TrackingTools/GsfTools/interface/MultiTrajectoryStateTransform.h"
+
+// Brauch ich die?
+  #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
   //
   // class declaration
@@ -90,19 +105,30 @@
       edm::EDGetTokenT<edm::View<reco::GsfTrack> > GsfTrackCollectionToken_;
       edm::EDGetTokenT<edm::View<reco::Track> > TrackCollectionToken_;
 
+  // GsfTrackToVtx imports
+      edm::ESHandle<GlobalTrackingGeometry> trackingGeometryHandle_;
+      edm::ESHandle<MagneticField> magneticFieldHandle_;
+
   // ----------counting variables ---------------------------
       int indexEvent;
       int assocseedfound;
       int assoctrackfound;
       double seedsuccessrate;
       double tracksuccessrate;
+      int track_varib_nr;
+      int tp_varib_nr;
 
   // ----------TTree Varibs ---------------------------
       TTree * track_tree;
-      int track_varib_nr;
       float gsf_track[9];
       float seed_assoc_track[9];
       float track_assoc_track[9];
+      float tp_track[5];
+      float size_nc_weight[3];
+      int ic_para[1];
+
+      AlgebraicVector5 localPars_;
+      AlgebraicMatrix55 localCov_;
 
   };
 
@@ -134,6 +160,7 @@
       seedsuccessrate = 0;
       tracksuccessrate = 0;
       track_varib_nr = 9;
+      tp_varib_nr = 5;
 
       TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
       tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
@@ -179,19 +206,19 @@
   {
     using namespace edm;
 
-  // handles for impl = QuickTrackAssociatorByHitsImpl
+// GsfTrackToVtx handle code
+    iSetup.get<GlobalTrackingGeometryRecord>().get(trackingGeometryHandle_);
+    iSetup.get<IdealMagneticFieldRecord>().get(magneticFieldHandle_);
+    MultiTrajectoryStateTransform mtst(&*trackingGeometryHandle_,&*magneticFieldHandle_);
+
+    edm::Handle<edm::View<reco::GsfTrack> > gsfTrackHandle;
+    iEvent.getByToken(GsfTrackCollectionToken_, gsfTrackHandle);
+// GsfTrackToVtx handle code end
+
+// handles for impl = QuickTrackAssociatorByHitsImpl
     const ClusterTPAssociation *clusterAssoc = nullptr;
     std::unique_ptr<TrackerHitAssociator> trackAssoc;
-  //  if(useClusterTPAssociation_)  {
-  //    edm::Handle<ClusterTPAssociation> clusterAssocHandle;
-  //    iEvent.getByToken(cluster2TPToken_,clusterAssocHandle);
-  //    clusterAssoc = clusterAssocHandle.product();
-  //  }
-  //  else {
-      // If control got this far then either useClusterTPAssociation_ was false or getting the cluster
-      // to TrackingParticle association from the event failed. Either way I need to create a hit associator.
-      trackAssoc = std::make_unique<TrackerHitAssociator>(iEvent, trackerHitAssociatorConfig_);
-  //  }
+    trackAssoc = std::make_unique<TrackerHitAssociator>(iEvent, trackerHitAssociatorConfig_);
 
     edm::Handle<edm::View<TrajectorySeed> > TrajectorySeedHandle;
     iEvent.getByToken(TrajectorySeedToken_, TrajectorySeedHandle);
@@ -205,7 +232,7 @@
     edm::Handle<edm::View<reco::Track> > TrackCollectionHandle;
     iEvent.getByToken(TrackCollectionToken_, TrackCollectionHandle);
 
-    std::cout << " " << "\n" << "------------------------------------------" << "\n" << "\n"
+    std::cout << "\n" << "------------------------------------------" << "\n" << "\n"
               << "--- Output Prints of MyTrackAssociator ---" << "\n" << "\n"
               << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n"
               << "#TrackingParticles = " << tpHandle->size() << "\n"
@@ -213,34 +240,21 @@
 
   // Associator Funktion
     auto impl = std::make_unique<QuickTrackAssociatorByHitsImpl>(iEvent.productGetter(),
-                                                                  std::move(trackAssoc),
-                                                                  clusterAssoc,
-                                                                  absoluteNumberOfHits_,
-                                                                  qualitySimToReco_,
-                                                                  puritySimToReco_,
-                                                                    pixelHitWeight_,
-                                                                  cutRecoToSim_,
-                                                                  threeHitTracksAreSpecial_,
-                                                                  simToRecoDenominator_);
+        std::move(trackAssoc),
+        clusterAssoc,
+        absoluteNumberOfHits_,
+        qualitySimToReco_,
+        puritySimToReco_,
+        pixelHitWeight_,
+        cutRecoToSim_,
+        threeHitTracksAreSpecial_,
+        simToRecoDenominator_);
 
     reco::RecoToSimCollectionSeed mySeedToSim = impl->associateRecoToSim(TrajectorySeedHandle,tpHandle);
 
     reco::RecoToSimCollection myTrackToSim = impl->associateRecoToSim(TrackCollectionHandle,tpHandle);
 
-  // Testing Seed
-  // REF - Smart Pointer
-  //  edm::RefToBase<TrajectorySeed> seedRef(TrajectorySeedHandle,0);
-  //  reco::RecoToSimCollectionSeed::const_iterator iassocseed = mySeedToSim.find(seedRef);
-
-  // Test Prints
-  //  std::cout << "------------------------------" << "\n" << "\n" << "#mySeedToSim Size = " << mySeedToSim.size() << "\n"
-  //            << "std::typeid((*iassocseed).first).name() = " << typeid(*iassocseed).name() << "\n"
-  //            << "#iassocseed size = " << (*iassocseed).val.size() << "\n"
-  //            << "\n" << "------------------------------" << "\n" << "\n"
-  //            << "iassocseed Loop " << std::endl;
-
-  //  std::cout << "\n" << "pt, phi, eta, charge, vertex, pdgId, #TRLayers, qual" << " " << std::endl;
-
+// Associator loop
     for ( size_t j=0; j< GsfTrackCollectionHandle->size() ; ++j ) {
         const reco::GsfTrack& gsfTrack = GsfTrackCollectionHandle->at(j);
 
@@ -255,69 +269,40 @@
         std::cout << "GsfTrackCollectionHandle->size() = " << GsfTrackCollectionHandle->size() << std::endl;
         std::cout << "TrajectorySeedHandle->size() = " << TrajectorySeedHandle->size() << std::endl;
         std::cout << "TrackCollectionHandle->size() = " << TrackCollectionHandle->size() << std::endl;
+        std::cout << "tpHandle->size() = " << tpHandle->size() << std::endl;
 
-  //      std::cout << j << " " << (*iassocseed).val->size() << std::endl;
-        // Wert der Varib in Tree datenstruktur kopieren
-  //          for (int k = 0; track_varib_nr; ++k){
-  //            std::cout << "Set to 0 loop!" << k << std::endl;
-  //            gsf_track[k] = 0;
-  //          }
-        gsf_track[0] = 0;
-        gsf_track[1] = 0;
-        gsf_track[2] = 0;
-        gsf_track[3] = 0;
-        gsf_track[4] = 0;
-        gsf_track[5] = 0;
-        gsf_track[6] = 0;
-        gsf_track[7] = 0;
-        gsf_track[8] = 0;
+        for (int k = 0; k < track_varib_nr; k++){
+            gsf_track[k] = 0;
+            seed_assoc_track[k] = 0;
+            track_assoc_track[k] = 0;
+        }
 
-        seed_assoc_track[0] = 0;
-        seed_assoc_track[1] = 0;
-        seed_assoc_track[2] = 0;
-        seed_assoc_track[3] = 0;
-        seed_assoc_track[4] = 0;
-        seed_assoc_track[5] = 0;
-        seed_assoc_track[6] = 0;
-        seed_assoc_track[7] = 0;
-        seed_assoc_track[8] = 0;
+        size_nc_weight[0] = 0;
+        size_nc_weight[1] = 0;
+        size_nc_weight[2] = 0;
+        ic_para[0] = 0;
 
-        track_assoc_track[0] = 0;
-        track_assoc_track[1] = 0;
-        track_assoc_track[2] = 0;
-        track_assoc_track[3] = 0;
-        track_assoc_track[4] = 0;
-        track_assoc_track[5] = 0;
-        track_assoc_track[6] = 0;
-        track_assoc_track[7] = 0;
-        track_assoc_track[8] = 0;
+        for (int k = 0; k < tp_varib_nr; k++){
+            tp_track[k] = 0;
+        }
 
         std::cout << "all track set to 0 worked! Loop Nr = " << j << std::endl;
 
-        gsf_track[0] = gsfTrack.pt();
-        gsf_track[1] = gsfTrack.phi();
-        gsf_track[2] = gsfTrack.eta();
-        gsf_track[3] = gsfTrack.charge();
-        gsf_track[4] = gsfTrack.dxy();
-        gsf_track[5] = gsfTrack.dz();
-        gsf_track[6] = gsfTrack.numberOfValidHits();
+//        gsf_track[0] = gsfTrack.pt();
+//        gsf_track[1] = gsfTrack.phi();
+//        gsf_track[2] = gsfTrack.eta();
+//        gsf_track[3] = gsfTrack.charge();
+//        gsf_track[4] = gsfTrack.dxy();
+//        gsf_track[5] = gsfTrack.dz();
+//        gsf_track[6] = gsfTrack.numberOfValidHits();
 
-        std::cout << "gsf (gsf_track) fill worked!" << std::endl;
+        std::cout << "gsf_track fill worked!" << std::endl;
 
         if (iassocseed != mySeedToSim.end()){
-          std::cout << "\n" << "if (iassocseed != mySeedToSim.end()){" << std::endl;
+//          std::cout << "\n" << "if (iassocseed != mySeedToSim.end()){" << std::endl;
 
             std::cout << "Sim to reco seed found!" << std::endl;
             std::cout << "SIZE (*iassocseed).val.size() = " << (*iassocseed).val.size() << std::endl;
-
-//            const edm::Ref<TrackingParticleCollection> tref_seed = (*iassocseed).val[j].first;
-//            std::cout << "(*iassocseed).val[j].second = " << (*iassocseed).val[j].second << "\n"
-//            << "tref_seed->pt() = " << tref_seed->pt() << "\n"
-//            << "tref_seed->phi() = " << tref_seed->phi() << "\n"
-//            << "tref_seed->eta() = " << tref_seed->eta() << "\n"
-//            << "tref_seed->charge() = " << tref_seed->charge() << "\n"
-//            << "tref_seed->numberOfTrackerLayers() = " << tref_seed->numberOfTrackerLayers()
-//            << std::endl;
 
             size_t kmax = 0;
             double qmax = -1.;
@@ -328,47 +313,54 @@
                 std::cout << "i = " << i << ", (*iassocseed).val[i].second = " << (*iassocseed).val[i].second << std::endl;
 
                 if ((*iassocseed).val[i].second > qmax){
-                    std::cout << "qmax if entered" << std::endl;
+//                    std::cout << "qmax if entered" << std::endl;
                     kmax = i;
                     qmax = (*iassocseed).val[i].second;
                     std::cout << "qmax = " << qmax << std::endl;
                 }
-
                 else {
                     std::cout << "assocseed not filled, bad quality!" << std::endl;
                 }
             }
-
-            std::cout << "qmax #2 = " << qmax << std::endl;
+//            std::cout << "qmax #2 = " << qmax << std::endl;
 
             if ( qmax>0.) {
                 std::cout << "qmax < 0 found!" << std::endl;
 
-                gsf_track[7] = float(qmax);
+//                gsf_track[7] = float(qmax);
 
                 const edm::Ref<TrackingParticleCollection> tref_seed = (*iassocseed).val[kmax].first;
-                seed_assoc_track[0] = tref_seed->pt();
-                seed_assoc_track[1] = tref_seed->phi();
-                seed_assoc_track[2] = tref_seed->eta();
-                seed_assoc_track[3] = tref_seed->charge();
-                seed_assoc_track[6] = tref_seed->numberOfTrackerLayers();
+//                seed_assoc_track[0] = tref_seed->pt();
+//                seed_assoc_track[1] = tref_seed->phi();
+//                seed_assoc_track[2] = tref_seed->eta();
+//                seed_assoc_track[3] = tref_seed->charge();
+//                seed_assoc_track[6] = tref_seed->numberOfTrackerLayers();
                 std::cout << "seed_assoc_track writen!" << std::endl;
 
-                ++assocseedfound;
-                std::cout << "assocseedfound # incresed!" << "\n" << std::endl;
-            }
-        }
+//                std::cout << "(*iassocseed).val[j].second = " << (*iassocseed).val[j].second << "\n"
+//                << "tref_seed->pt() = " << tref_seed->pt() << "\n"
+//                << "tref_seed->phi() = " << tref_seed->phi() << "\n"
+//                << "tref_seed->eta() = " << tref_seed->eta() << "\n"
+//                << "tref_seed->charge() = " << tref_seed->charge() << "\n"
+//                << "tref_seed->x^2+y^2 = " << tref_seed->vx()*tref_seed->vx()+tref_seed->vy()*tref_seed->vy() << "\n"
+//                << "tref_seed->numberOfTrackerLayers() = " << tref_seed->numberOfTrackerLayers()
+//                << std::endl;
 
-        else {
-            std::cout << "No sim to reco seed!" << "\n" << std::endl;
-            gsf_track[7] = -1;
+                ++assocseedfound;
+                std::cout << "assocseedfound # increased!" << "\n" << std::endl;
+
+            }
+            else {
+                std::cout << "No sim to reco seed!" << "\n" << std::endl;
+//                gsf_track[7] = -1;
+            }
         }
 
         if (iassoctrack != myTrackToSim.end()){
 
             std::cout << "Sim to reco track found!" << std::endl;
             std::cout << "#myTrackToSim Size = " << myTrackToSim.size() << std::endl;
-            std::cout << "std::typeid((*iassoctrack).first).name() = " << typeid(*iassoctrack).name() << "\n" << std::endl;
+//            std::cout << "std::typeid((*iassoctrack).first).name() = " << typeid(*iassoctrack).name() << "\n" << std::endl;
   //          std::cout << "#iassoctrack qual = " << (*iassoctrack).val[i].second << std::endl;
             std::cout << "(*iassoctrack).val.size() = " << (*iassoctrack).val.size() << std::endl;
 
@@ -381,7 +373,6 @@
                     kmax = i;
                     qmax = (*iassoctrack).val[i].second;
                 }
-
                 else {
                     std::cout << "iassoctrack not filled, bad quality!" << std::endl;
                 }
@@ -390,35 +381,126 @@
             if ( qmax>0.) {
                 std::cout << "qmax < 0 found!" << std::endl;
 
-                gsf_track[8] = float(qmax);
+//                gsf_track[8] = float(qmax);
 
                 const edm::Ref<TrackingParticleCollection> tref_track = (*iassoctrack).val[kmax].first;
-                track_assoc_track[0] = tref_track->pt();
-                track_assoc_track[1] = tref_track->phi();
-                track_assoc_track[2] = tref_track->eta();
-                track_assoc_track[3] = tref_track->charge();
-                track_assoc_track[6] = tref_track->numberOfTrackerLayers();
+//                track_assoc_track[0] = tref_track->pt();
+//                track_assoc_track[1] = tref_track->phi();
+//                track_assoc_track[2] = tref_track->eta();
+//                track_assoc_track[3] = tref_track->charge();
+//                track_assoc_track[6] = tref_track->numberOfTrackerLayers();
                 std::cout << "track_assoc_track writen!" << std::endl;
 
-                ++assoctrackfound;
-                std::cout << "assoctrackfound # incresed!" << "\n" << std::endl;
+                // GsfTrackToVtx loop code
+                for ( edm::View<reco::GsfTrack>::const_iterator igsf=gsfTrackHandle->begin();
+                igsf!=gsfTrackHandle->end(); ++igsf ) {
+
+                    if ((tref_track->vx()*tref_track->vx()+tref_track->vy()*tref_track->vy())<0.0625) {
+
+                        TrajectoryStateOnSurface innTSOS = mtst.innerStateOnSurface(*igsf);
+                        // Changed from GlobalPoint(0.,0.,0.)
+                        TrajectoryStateOnSurface vtxTSOS = mtst.extrapolatedState(innTSOS,GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz()));
+                        std::cout << "GsfTrackToVtx code" << "\n"
+                        << "innTSOS comp.size = " << innTSOS.components().size() << "\n"
+                        << "vtxTSOS comp.size = " << vtxTSOS.components().size() << "\n"
+//                        << "vtxTSOS localParameters().vector() = " << vtxTSOS.localParameters().vector() << "\n"
+//                        << "vtxTSOS localError().matrix() = " << vtxTSOS.localError().matrix() << "\n"
+                        << std::endl;
+
+                        std::cout << "Gsf total mixture loop start" << std::endl;
+
+                        LocalVector assocp(vtxTSOS.surface().toLocal(GlobalVector(tref_track->px(),tref_track->py(),tref_track->pz())));
+                        LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
+
+                        size_nc_weight[0] = j;
+                        size_nc_weight[1] = vtxTSOS.components().size();
+                        size_nc_weight[2] = 1;
+                        ic_para[0] = -1;
+
+                        localPars_ = vtxTSOS.localParameters().vector();
+                        localCov_ = vtxTSOS.localError().matrix();
+
+                        tp_track[0] = tref_track->charge()/tref_track->p();
+                        tp_track[1] = assocp.x()/assocp.z();
+                        tp_track[2] = -assocp.y()/assocp.z();
+                        tp_track[3] = assocv.x();
+                        tp_track[4] = assocv.y();
+
+                        track_tree->Fill();
+
+                        std::cout << "Gsf total mixture filled" << std::endl;
+                        std::cout << "Gsf component loop start" << "\n" << std::endl;
+
+                        for (size_t ic=0; ic<vtxTSOS.components().size(); ++ic ) {
+
+                              LocalVector assocp(vtxTSOS.surface().toLocal(GlobalVector(tref_track->px(),tref_track->py(),tref_track->pz())));
+//                              std::cout << "toLocal seed g p -> l p = " << assocp.x() << " " << assocp.y() << " " << assocp.z() << std::endl;
+
+                              LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
+//                              std::cout << "toLocal seed g v -> l v = " << assocv.x() << " " << assocv.y() << " " << assocv.z() << std::endl;
+
+//                              std::cout << "\n"
+//                              << "nc = vtxTSOS.components().size() = " << vtxTSOS.components().size() << "\n"
+//                              << "ic = " << ic << "\n"
+//                              << "vtxTSOS.components()[ic].weight() = " << vtxTSOS.components()[ic].weight() << "\n"
+//
+//                              << "q_sim/p_sim, px_local_sim/pz_local_sim, py_local_sim/pz_local_sim, vx_local_sim, vy_local_sim" << "\n"
+//                              << "vtxTSOS localParameters().vector() = " << vtxTSOS.components()[ic].localParameters().vector() << "\n"
+//                              << "vtxTSOS localParameters().matrix() = " << vtxTSOS.components()[ic].localError().matrix() << "\n"
+//                              << "sim                                  "
+//                              << tref_track->charge()/tref_track->p() << ", " << assocp.x()/assocp.z() << ", " << -assocp.y()/assocp.z() << ", "
+//                              << assocv.x() << ", " << assocv.y() << "\n"
+//                              << "tref_track->charge()/tref_track->p() assocp.x()/assocp.z() -assocp.y()/assocp.z() assocv.x() assocv.y()" << "\n"
+//                              << std::endl;
+
+                              size_nc_weight[0] = j;
+                              size_nc_weight[1] = vtxTSOS.components().size();
+                              size_nc_weight[2] = vtxTSOS.components()[ic].weight();
+                              ic_para[0] = ic;
+
+//                              std::cout << "size = " << typeid(vtxTSOS.components().size()).name() << "ic " << typeid(ic).name() << std::endl;
+
+                              localPars_ = vtxTSOS.components()[ic].localParameters().vector();
+                              localCov_ = vtxTSOS.components()[ic].localError().matrix();
+
+                              tp_track[0] = tref_track->charge()/tref_track->p();
+                              tp_track[1] = assocp.x()/assocp.z();
+                              tp_track[2] = -assocp.y()/assocp.z();
+                              tp_track[3] = assocv.x();
+                              tp_track[4] = assocv.y();
+
+                              track_tree->Fill();
+
+                              std::cout << "Loop " << ic << " complete & filled" << std::endl;
+                        }
+
+//                        LocalPoint lp(vtxTSOS.surface().toLocal(GlobalPoint(0.,0.,0.)));
+//                        std::cout << "   " << lp.x() << " " << lp.y() << " " << lp.z() << std::endl;
+//                        GlobalVector gy(vtxTSOS.surface().toGlobal(LocalVector(0.,1.,0.)));
+//                        std::cout << "   " << gy.x() << " " << gy.y() << " " << gy.z() << std::endl;
+                    }
+                    else {
+                        std::cout << "Gsf Vertex too far from origin, no Gaussian Mix produced" << "\n" << std::endl;
+                    }
+
+                    ++assoctrackfound;
+                    std::cout << "assoctrackfound # increased!" << "\n" << std::endl;
+                }
             }
         }
-
         else {
             std::cout << "No sim to reco track!" << "\n" << std::endl;
-            gsf_track[8] = -1;
+//            gsf_track[8] = -1;
         }
 
   // to have quality information on both branches
-        seed_assoc_track[7] = gsf_track[7];
-        seed_assoc_track[8] = gsf_track[8];
-        track_assoc_track[7] = gsf_track[7];
-        track_assoc_track[8] = gsf_track[8];
+//        seed_assoc_track[7] = gsf_track[7];
+//        seed_assoc_track[8] = gsf_track[8];
+//        track_assoc_track[7] = gsf_track[7];
+//        track_assoc_track[8] = gsf_track[8];
 
-        track_tree->Fill();
+//        track_tree->Fill();
         std::cout << "all fills worked!" << "\n" << std::endl;
-
     }
 
     seedsuccessrate = float(assocseedfound) / float(indexEvent);
@@ -445,10 +527,14 @@
   // initialize tree
     edm::Service<TFileService> fs;
     track_tree = fs->make<TTree>("track_associator_tree","Associator tree with branches" );
-    track_tree->Branch("gsf_track", &gsf_track, "gsf_track[9]/F");
-    track_tree->Branch("seed_assoc_track", &seed_assoc_track, "seed_assoc_track[9]/F");
-    track_tree->Branch("track_assoc_track", &track_assoc_track, "track_assoc_track[9]/F");
-
+//    track_tree->Branch("gsf_track", &gsf_track, "gsf_track[9]/F");
+//    track_tree->Branch("seed_assoc_track", &seed_assoc_track, "seed_assoc_track[9]/F");
+//    track_tree->Branch("track_assoc_track", &track_assoc_track, "track_assoc_track[9]/F");
+    track_tree->Branch("size_nc_weight", &size_nc_weight, "size_nc_weight[3]/F");
+    track_tree->Branch("ic_para", &ic_para, "ic_para[1]/I");
+    track_tree->Branch("localPars",&localPars_);
+    track_tree->Branch("localCov",&localCov_);
+    track_tree->Branch("tp_track", &tp_track, "tp_track[5]/F");
   }
 
   // ------------ method called once each job just after ending the event loop  ------------

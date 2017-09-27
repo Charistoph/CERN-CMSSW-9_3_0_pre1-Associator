@@ -27,6 +27,9 @@ process.load('Configuration.StandardSequences.Validation_cff')
 process.load('DQMOffline.Configuration.DQMOfflineMC_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
+# GsfTrackToVtx code
+process.GlobalTag.globaltag = cms.string('91X_mcRun1_realistic_v2')
+
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(10)
 )
