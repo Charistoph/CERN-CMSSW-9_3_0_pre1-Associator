@@ -104,7 +104,7 @@ def MakeHistoIfNonZero(branch_variable,track_name):
 # main code
 
 # open root file & tree
-filename = "output_gsf_associator.root"
+filename = "output_gsf_associator_assoc_10000.root"
 tf = ROOT.TFile(filename)
 #tf.ls()
 tree_dir = tf.Get("MyTrackAssociator")

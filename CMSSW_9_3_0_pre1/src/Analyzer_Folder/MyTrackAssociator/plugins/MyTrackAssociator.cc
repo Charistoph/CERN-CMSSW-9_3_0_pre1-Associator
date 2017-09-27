@@ -1,442 +1,454 @@
-  // -*- C++ -*-
-  //
-  // Package:    SimTracker/TrackAssociatorProducers
-  // Class:      QuickTrackAssociatorByHitsProducer
-  //
-  /**\class QuickTrackAssociatorByHitsProducer QuickTrackAssociatorByHitsProducer.cc SimTracker/TrackAssociatorProducers/plugins/QuickTrackAssociatorByHitsProducer.cc
+// -*- C++ -*-
+//
+// Package:    SimTracker/TrackAssociatorProducers
+// Class:      QuickTrackAssociatorByHitsProducer
+//
+/**\class QuickTrackAssociatorByHitsProducer QuickTrackAssociatorByHitsProducer.cc SimTracker/TrackAssociatorProducers/plugins/QuickTrackAssociatorByHitsProducer.cc
 
-  Description: [one line class summary]
+Description: [one line class summary]
 
-  Implementation:
-      [Notes on implementation]
-  */
-  //
-  // Original Author:  Christoph Bernkopf
-  //         Created:  Mon, 31 Jul 2017 10:50:34 GMT
-  //
-  //
+Implementation:
+    [Notes on implementation]
+*/
+//
+// Original Author:  Christoph Bernkopf
+//         Created:  Mon, 31 Jul 2017 10:50:34 GMT
+//
+//
 
 
-  // system include files
-  #include <memory>
-  #include <iostream>
+// system include files
+#include <memory>
 
-  // user include files
-  #include "FWCore/Framework/interface/Frameworkfwd.h"
-  #include "FWCore/Framework/interface/one/EDAnalyzer.h"
-  #include "FWCore/Framework/interface/ESHandle.h"
+// user include files
+#include "FWCore/Framework/interface/Frameworkfwd.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 
-  #include "FWCore/Framework/interface/Event.h"
-  #include "FWCore/Framework/interface/MakerMacros.h"
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
 
-  #include "FWCore/ParameterSet/interface/ParameterSet.h"
-  #include "FWCore/Utilities/interface/EDGetToken.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/Utilities/interface/EDGetToken.h"
 
-  //--------------------------------------------------------
-  #include "SimDataFormats/Associations/interface/TrackToTrackingParticleAssociator.h"
-  #include "SimTracker/TrackerHitAssociation/interface/TrackerHitAssociator.h"
-  // wenn lokal gespeichert
-  #include "Analyzer_Folder/MyTrackAssociator/interface/QuickTrackAssociatorByHitsImpl.h"
-  // wenn von CMSSW genommen
-  //#include "SimTracker/TrackAssociatorProducers/plugins/QuickTrackAssociatorByHitsImpl.h"
+//--------------------------------------------------------
+#include "SimDataFormats/Associations/interface/TrackToTrackingParticleAssociator.h"
+#include "SimTracker/TrackerHitAssociation/interface/TrackerHitAssociator.h"
+// wenn lokal gespeichert
+#include "Analyzer_Folder/MyTrackAssociator/interface/QuickTrackAssociatorByHitsImpl.h"
+// wenn von CMSSW genommen
+//#include "SimTracker/TrackAssociatorProducers/plugins/QuickTrackAssociatorByHitsImpl.h"
 
-  #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
-  #include "SimDataFormats/TrackingAnalysis/interface/TrackingParticleFwd.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticle.h"
+#include "SimDataFormats/TrackingAnalysis/interface/TrackingParticleFwd.h"
 
-  // Import missing track data
-  #include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
-  #include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
-  #include "DataFormats/EgammaReco/interface/ElectronSeed.h"
-  #include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
+// Import missing track data
+#include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
+#include "DataFormats/GsfTrackReco/interface/GsfTrackFwd.h"
+#include "DataFormats/EgammaReco/interface/ElectronSeed.h"
+#include "DataFormats/EgammaReco/interface/ElectronSeedFwd.h"
 
-  // TTree include
-  #include "TTree.h"
-  #include "FWCore/ServiceRegistry/interface/Service.h"
-  #include "CommonTools/UtilAlgos/interface/TFileService.h"
+// TTree include
+#include "TTree.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
 
-// GsfTrackToVtx imports
-  #include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
-  #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
+//
+// class declaration
+//
+namespace {
+}
 
-  #include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
-  #include "MagneticField/Engine/interface/MagneticField.h"
+class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources> {
+  public:
+    explicit MyTrackAssociator(const edm::ParameterSet&);
+    ~MyTrackAssociator();
 
-  #include "TrackingTools/TrajectoryState/interface/TrajectoryStateOnSurface.h"
-  #include "TrackingTools/GsfTools/interface/MultiTrajectoryStateTransform.h"
+    static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
-// Brauch ich die?
-  #include "FWCore/MessageLogger/interface/MessageLogger.h"
+  private:
+    virtual void beginJob() override;
+//    virtual void analyze(edm::StreamID, edm::Event&, const edm::EventSetup&) override;
+    virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
+    virtual void endJob() override;
+    edm::ParameterSet makeHitAssociatorParameters(const edm::ParameterSet&);
 
-  //
-  // class declaration
-  //
-  namespace {
-  }
+// ----------associator member data ---------------------------
+    TrackerHitAssociator::Config trackerHitAssociatorConfig_;
+    edm::EDGetTokenT<ClusterTPAssociation> cluster2TPToken_;
+    double qualitySimToReco_;
+    double puritySimToReco_;
+    double pixelHitWeight_;
+    double cutRecoToSim_;
+    QuickTrackAssociatorByHitsImpl::SimToRecoDenomType simToRecoDenominator_;
+    bool threeHitTracksAreSpecial_;
+    bool useClusterTPAssociation_;
+    bool absoluteNumberOfHits_;
 
-  class MyTrackAssociator : public edm::one::EDAnalyzer<edm::one::SharedResources> {
-    public:
-      explicit MyTrackAssociator(const edm::ParameterSet&);
-      ~MyTrackAssociator();
+// ----------member data ---------------------------
+    edm::EDGetTokenT<edm::View<TrajectorySeed> > TrajectorySeedToken_;
+    edm::EDGetTokenT<TrackingParticleCollection> tpToken_;
+    edm::EDGetTokenT<edm::View<reco::GsfTrack> > GsfTrackCollectionToken_;
+    edm::EDGetTokenT<edm::View<reco::Track> > TrackCollectionToken_;
 
-      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+// ----------counting variables ---------------------------
+    int indexEvent;
+    int assocseedfound;
+    int assoctrackfound;
+    double seedsuccessrate;
+    double tracksuccessrate;
 
-    private:
-      virtual void beginJob() override;
-  //    virtual void analyze(edm::StreamID, edm::Event&, const edm::EventSetup&) override;
-      virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
-      virtual void endJob() override;
-      edm::ParameterSet makeHitAssociatorParameters(const edm::ParameterSet&);
+// ----------TTree Varibs ---------------------------
+    TTree * track_tree;
+    int track_varib_nr;
+    float gsf_track[9];
+    float seed_assoc_track[9];
+    float track_assoc_track[9];
+    float stats[5];
 
-  // ----------associator member data ---------------------------
-      TrackerHitAssociator::Config trackerHitAssociatorConfig_;
-      edm::EDGetTokenT<ClusterTPAssociation> cluster2TPToken_;
-      double qualitySimToReco_;
-      double puritySimToReco_;
-      double pixelHitWeight_;
-      double cutRecoToSim_;
-      QuickTrackAssociatorByHitsImpl::SimToRecoDenomType simToRecoDenominator_;
-      bool threeHitTracksAreSpecial_;
-      bool useClusterTPAssociation_;
-      bool absoluteNumberOfHits_;
+};
 
-  // ----------member data ---------------------------
-      edm::EDGetTokenT<edm::View<TrajectorySeed> > TrajectorySeedToken_;
-      edm::EDGetTokenT<TrackingParticleCollection> tpToken_;
-      edm::EDGetTokenT<edm::View<reco::GsfTrack> > GsfTrackCollectionToken_;
-      edm::EDGetTokenT<edm::View<reco::Track> > TrackCollectionToken_;
+//
+// constants, enums and typedefs
+//
 
-  // GsfTrackToVtx imports
-      edm::ESHandle<GlobalTrackingGeometry> trackingGeometryHandle_;
-      edm::ESHandle<MagneticField> magneticFieldHandle_;
+//
+// static data member definitions
+//
 
-  // ----------counting variables ---------------------------
-      int indexEvent;
-      int assocseedfound;
-      int assoctrackfound;
-      double seedsuccessrate;
-      double tracksuccessrate;
-      int track_varib_nr;
+//
+// constructors and destructor
+//
 
-  // ----------TTree Varibs ---------------------------
-      TTree * track_tree;
-      float gsf_track[9];
-      float seed_assoc_track[9];
-      float track_assoc_track[9];
+MyTrackAssociator::MyTrackAssociator(const edm::ParameterSet& iConfig):
+  trackerHitAssociatorConfig_(makeHitAssociatorParameters(iConfig), consumesCollector()),
+  qualitySimToReco_( iConfig.getParameter<double>( "Quality_SimToReco" ) ),
+  puritySimToReco_( iConfig.getParameter<double>( "Purity_SimToReco" ) ),
+  pixelHitWeight_( iConfig.getParameter<double>( "PixelHitWeight" ) ),
+  cutRecoToSim_( iConfig.getParameter<double>( "Cut_RecoToSim" ) ),
+  threeHitTracksAreSpecial_( iConfig.getParameter<bool>( "ThreeHitTracksAreSpecial" ) ),
+  useClusterTPAssociation_( iConfig.getParameter<bool>( "useClusterTPAssociation" ) ),
+  absoluteNumberOfHits_( iConfig.getParameter<bool>( "AbsoluteNumberOfHits" ) ){
 
-  };
+    indexEvent = 0;
+    assocseedfound = 0;
+    assoctrackfound = 0;
+    seedsuccessrate = 0;
+    tracksuccessrate = 0;
+    track_varib_nr = 9;
 
-  //
-  // constants, enums and typedefs
-  //
+    TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
+    tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
+    GsfTrackCollectionToken_ = consumes<edm::View<reco::GsfTrack> >(edm::InputTag("electronGsfTracks"));
+    TrackCollectionToken_ = consumes<edm::View<reco::Track> >(edm::InputTag("electronGsfTracks"));
 
-  //
-  // static data member definitions
-  //
+    usesResource("TFileService");
 
-  //
-  // constructors and destructor
-  //
+}
 
-  MyTrackAssociator::MyTrackAssociator(const edm::ParameterSet& iConfig):
-    trackerHitAssociatorConfig_(makeHitAssociatorParameters(iConfig), consumesCollector()),
-    qualitySimToReco_( iConfig.getParameter<double>( "Quality_SimToReco" ) ),
-    puritySimToReco_( iConfig.getParameter<double>( "Purity_SimToReco" ) ),
-    pixelHitWeight_( iConfig.getParameter<double>( "PixelHitWeight" ) ),
-    cutRecoToSim_( iConfig.getParameter<double>( "Cut_RecoToSim" ) ),
-    threeHitTracksAreSpecial_( iConfig.getParameter<bool>( "ThreeHitTracksAreSpecial" ) ),
-    useClusterTPAssociation_( iConfig.getParameter<bool>( "useClusterTPAssociation" ) ),
-    absoluteNumberOfHits_( iConfig.getParameter<bool>( "AbsoluteNumberOfHits" ) ){
+MyTrackAssociator::~MyTrackAssociator(){
 
-      indexEvent = 0;
-      assocseedfound = 0;
-      assoctrackfound = 0;
-      seedsuccessrate = 0;
-      tracksuccessrate = 0;
-      track_varib_nr = 9;
+  // do anything here that needs to be done at desctruction time
+  // (e.g. close files, deallocate resources etc.)
 
-      TrajectorySeedToken_ = consumes<edm::View<TrajectorySeed> >(edm::InputTag("electronMergedSeeds"));
-      tpToken_ = consumes<TrackingParticleCollection>(edm::InputTag("tpSelection"));
-      GsfTrackCollectionToken_ = consumes<edm::View<reco::GsfTrack> >(edm::InputTag("electronGsfTracks"));
-      TrackCollectionToken_ = consumes<edm::View<reco::Track> >(edm::InputTag("electronGsfTracks"));
+}
 
-      usesResource("TFileService");
+//
+// member functions
+//
 
-  }
+// Set up the parameter set for the hit associator
+edm::ParameterSet
+MyTrackAssociator::makeHitAssociatorParameters(const edm::ParameterSet& iConfig) {
+ edm::ParameterSet hitAssociatorParameters;
+ hitAssociatorParameters.addParameter<bool>( "associatePixel", iConfig.getParameter<bool>("associatePixel") );
+ hitAssociatorParameters.addParameter<bool>( "associateStrip", iConfig.getParameter<bool>("associateStrip") );
+ // This is the important one, it stops the hit associator searching through the list of sim hits.
+ // I only want to use the hit associator methods that work on the hit IDs (i.e. the uint32_t trackId
+ // and the EncodedEventId eventId) so I'm not interested in matching that to the PSimHit objects.
+ hitAssociatorParameters.addParameter<bool>("associateRecoTracks",true);
+ // add these new ones to allow redirection of inputs:
+ hitAssociatorParameters.addParameter<edm::InputTag>( "pixelSimLinkSrc", iConfig.getParameter<edm::InputTag>("pixelSimLinkSrc") );
+ hitAssociatorParameters.addParameter<edm::InputTag>( "stripSimLinkSrc", iConfig.getParameter<edm::InputTag>("stripSimLinkSrc") );
 
-  MyTrackAssociator::~MyTrackAssociator(){
+ return hitAssociatorParameters;
+}
 
-    // do anything here that needs to be done at desctruction time
-    // (e.g. close files, deallocate resources etc.)
-
-  }
-
-  //
-  // member functions
-  //
-
-  // Set up the parameter set for the hit associator
-  edm::ParameterSet
-  MyTrackAssociator::makeHitAssociatorParameters(const edm::ParameterSet& iConfig) {
-   edm::ParameterSet hitAssociatorParameters;
-   hitAssociatorParameters.addParameter<bool>( "associatePixel", iConfig.getParameter<bool>("associatePixel") );
-   hitAssociatorParameters.addParameter<bool>( "associateStrip", iConfig.getParameter<bool>("associateStrip") );
-   // This is the important one, it stops the hit associator searching through the list of sim hits.
-   // I only want to use the hit associator methods that work on the hit IDs (i.e. the uint32_t trackId
-   // and the EncodedEventId eventId) so I'm not interested in matching that to the PSimHit objects.
-   hitAssociatorParameters.addParameter<bool>("associateRecoTracks",true);
-   // add these new ones to allow redirection of inputs:
-   hitAssociatorParameters.addParameter<edm::InputTag>( "pixelSimLinkSrc", iConfig.getParameter<edm::InputTag>("pixelSimLinkSrc") );
-   hitAssociatorParameters.addParameter<edm::InputTag>( "stripSimLinkSrc", iConfig.getParameter<edm::InputTag>("stripSimLinkSrc") );
-
-   return hitAssociatorParameters;
-  }
-
-  // ------------ method called for each event  ------------
-  void
-  MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
-  //MyTrackAssociator::analyze(edm::StreamID, edm::Event& iEvent, const edm::EventSetup& iSetup) const
-  {
-    using namespace edm;
-
-// GsfTrackToVtx handle code
-    iSetup.get<GlobalTrackingGeometryRecord>().get(trackingGeometryHandle_);
-    iSetup.get<IdealMagneticFieldRecord>().get(magneticFieldHandle_);
-    MultiTrajectoryStateTransform mtst(&*trackingGeometryHandle_,&*magneticFieldHandle_);
-
-    edm::Handle<edm::View<reco::GsfTrack> > gsfTrackHandle;
-    iEvent.getByToken(GsfTrackCollectionToken_, gsfTrackHandle);
-// GsfTrackToVtx handle code end
+// ------------ method called for each event  ------------
+void
+MyTrackAssociator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+//MyTrackAssociator::analyze(edm::StreamID, edm::Event& iEvent, const edm::EventSetup& iSetup) const
+{
+  using namespace edm;
 
 // handles for impl = QuickTrackAssociatorByHitsImpl
-    const ClusterTPAssociation *clusterAssoc = nullptr;
-    std::unique_ptr<TrackerHitAssociator> trackAssoc;
+  const ClusterTPAssociation *clusterAssoc = nullptr;
+  std::unique_ptr<TrackerHitAssociator> trackAssoc;
+//  if(useClusterTPAssociation_)  {
+//    edm::Handle<ClusterTPAssociation> clusterAssocHandle;
+//    iEvent.getByToken(cluster2TPToken_,clusterAssocHandle);
+//    clusterAssoc = clusterAssocHandle.product();
+//  }
+//  else {
+    // If control got this far then either useClusterTPAssociation_ was false or getting the cluster
+    // to TrackingParticle association from the event failed. Either way I need to create a hit associator.
     trackAssoc = std::make_unique<TrackerHitAssociator>(iEvent, trackerHitAssociatorConfig_);
+//  }
 
-    edm::Handle<edm::View<TrajectorySeed> > TrajectorySeedHandle;
-    iEvent.getByToken(TrajectorySeedToken_, TrajectorySeedHandle);
+  edm::Handle<edm::View<TrajectorySeed> > TrajectorySeedHandle;
+  iEvent.getByToken(TrajectorySeedToken_, TrajectorySeedHandle);
 
-    edm::Handle<TrackingParticleCollection> tpHandle;
-    iEvent.getByToken(tpToken_,tpHandle);
+  edm::Handle<TrackingParticleCollection> tpHandle;
+  iEvent.getByToken(tpToken_,tpHandle);
 
-    edm::Handle<edm::View<reco::GsfTrack> > GsfTrackCollectionHandle;
-    iEvent.getByToken(GsfTrackCollectionToken_, GsfTrackCollectionHandle);
+  edm::Handle<edm::View<reco::GsfTrack> > GsfTrackCollectionHandle;
+  iEvent.getByToken(GsfTrackCollectionToken_, GsfTrackCollectionHandle);
 
-    edm::Handle<edm::View<reco::Track> > TrackCollectionHandle;
-    iEvent.getByToken(TrackCollectionToken_, TrackCollectionHandle);
+  edm::Handle<edm::View<reco::Track> > TrackCollectionHandle;
+  iEvent.getByToken(TrackCollectionToken_, TrackCollectionHandle);
 
-    std::cout << "\n" << "------------------------------------------" << "\n" << "\n"
-              << "--- Output Prints of MyTrackAssociator ---" << "\n" << "\n"
-              << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n"
-              << "#TrackingParticles = " << tpHandle->size() << "\n"
-              << "#RecoTracks = " << TrackCollectionHandle->size() << "\n" << std::endl;
+  std::cout << " " << "\n" << "------------------------------------------" << "\n" << "\n"
+            << "--- Output Prints of MyTrackAssociator ---" << "\n" << "\n"
+            << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n"
+            << "#TrackingParticles = " << tpHandle->size() << "\n"
+            << "#RecoTracks = " << TrackCollectionHandle->size() << "\n" << std::endl;
 
-  // Associator Funktion
-    auto impl = std::make_unique<QuickTrackAssociatorByHitsImpl>(iEvent.productGetter(),
-        std::move(trackAssoc),
-        clusterAssoc,
-        absoluteNumberOfHits_,
-        qualitySimToReco_,
-        puritySimToReco_,
-        pixelHitWeight_,
-        cutRecoToSim_,
-        threeHitTracksAreSpecial_,
-        simToRecoDenominator_);
+// Associator Funktion
+  auto impl = std::make_unique<QuickTrackAssociatorByHitsImpl>(iEvent.productGetter(),
+                                                                std::move(trackAssoc),
+                                                                clusterAssoc,
+                                                                absoluteNumberOfHits_,
+                                                                qualitySimToReco_,
+                                                                puritySimToReco_,
+                                                                  pixelHitWeight_,
+                                                                cutRecoToSim_,
+                                                                threeHitTracksAreSpecial_,
+                                                                simToRecoDenominator_);
 
-    reco::RecoToSimCollectionSeed mySeedToSim = impl->associateRecoToSim(TrajectorySeedHandle,tpHandle);
+  reco::RecoToSimCollectionSeed mySeedToSim = impl->associateRecoToSim(TrajectorySeedHandle,tpHandle);
 
-    reco::RecoToSimCollection myTrackToSim = impl->associateRecoToSim(TrackCollectionHandle,tpHandle);
+  reco::RecoToSimCollection myTrackToSim = impl->associateRecoToSim(TrackCollectionHandle,tpHandle);
 
-// Associator loop
-    for ( size_t j=0; j< GsfTrackCollectionHandle->size() ; ++j ) {
-        const reco::GsfTrack& gsfTrack = GsfTrackCollectionHandle->at(j);
+// Testing Seed
+// REF - Smart Pointer
+//  edm::RefToBase<TrajectorySeed> seedRef(TrajectorySeedHandle,0);
+//  reco::RecoToSimCollectionSeed::const_iterator iassocseed = mySeedToSim.find(seedRef);
 
-        ++indexEvent;
+// Test Prints
+//  std::cout << "------------------------------" << "\n" << "\n" << "#mySeedToSim Size = " << mySeedToSim.size() << "\n"
+//            << "std::typeid((*iassocseed).first).name() = " << typeid(*iassocseed).name() << "\n"
+//            << "#iassocseed size = " << (*iassocseed).val.size() << "\n"
+//            << "\n" << "------------------------------" << "\n" << "\n"
+//            << "iassocseed Loop " << std::endl;
 
-        const edm::RefToBase<TrajectorySeed>& mySeedRef = gsfTrack.seedRef();
-        reco::RecoToSimCollectionSeed::const_iterator iassocseed = mySeedToSim.find(mySeedRef);
+//  std::cout << "\n" << "pt, phi, eta, charge, vertex, pdgId, #TRLayers, qual" << " " << std::endl;
 
-        edm::RefToBase<reco::Track> seedRef(TrackCollectionHandle,j);
-        reco::RecoToSimCollection::const_iterator iassoctrack = myTrackToSim.find(seedRef);
+  for ( size_t j=0; j< GsfTrackCollectionHandle->size() ; ++j ) {
+      const reco::GsfTrack& gsfTrack = GsfTrackCollectionHandle->at(j);
 
-        std::cout << "GsfTrackCollectionHandle->size() = " << GsfTrackCollectionHandle->size() << std::endl;
-        std::cout << "TrajectorySeedHandle->size() = " << TrajectorySeedHandle->size() << std::endl;
-        std::cout << "TrackCollectionHandle->size() = " << TrackCollectionHandle->size() << std::endl;
-        std::cout << "tpHandle->size() = " << tpHandle->size() << std::endl;
+      ++indexEvent;
 
-        for (int k = 0; k < track_varib_nr; k++){
-            gsf_track[k] = 0;
-            seed_assoc_track[k] = 0;
-            track_assoc_track[k] = 0;
-        }
+      const edm::RefToBase<TrajectorySeed>& mySeedRef = gsfTrack.seedRef();
+      reco::RecoToSimCollectionSeed::const_iterator iassocseed = mySeedToSim.find(mySeedRef);
 
-        std::cout << "all track set to 0 worked! Loop Nr = " << j << std::endl;
+      edm::RefToBase<reco::Track> seedRef(TrackCollectionHandle,j);
+      reco::RecoToSimCollection::const_iterator iassoctrack = myTrackToSim.find(seedRef);
 
-        gsf_track[0] = gsfTrack.pt();
-        gsf_track[1] = gsfTrack.phi();
-        gsf_track[2] = gsfTrack.eta();
-        gsf_track[3] = gsfTrack.charge();
-        gsf_track[4] = gsfTrack.dxy();
-        gsf_track[5] = gsfTrack.dz();
-        gsf_track[6] = gsfTrack.numberOfValidHits();
+      std::cout << "GsfTrackCollectionHandle->size() = " << GsfTrackCollectionHandle->size() << std::endl;
+      std::cout << "TrajectorySeedHandle->size() = " << TrajectorySeedHandle->size() << std::endl;
+      std::cout << "TrackCollectionHandle->size() = " << TrackCollectionHandle->size() << std::endl;
 
-        std::cout << "gsf_track fill worked!" << std::endl;
+      for (int k = 0; k < track_varib_nr; k++){
+          gsf_track[k] = 0;
+          seed_assoc_track[k] = 0;
+          track_assoc_track[k] = 0;
+      }
 
-        if (iassocseed != mySeedToSim.end()){
-          std::cout << "\n" << "if (iassocseed != mySeedToSim.end()){" << std::endl;
+      for (int k = 0; k < 5; k++){
+          stats[k] = 0;
+      }
 
-            std::cout << "Sim to reco seed found!" << std::endl;
-            std::cout << "SIZE (*iassocseed).val.size() = " << (*iassocseed).val.size() << std::endl;
+      std::cout << "all track set to 0 worked! Loop Nr = " << j << std::endl;
 
-            size_t kmax = 0;
-            double qmax = -1.;
+      gsf_track[0] = gsfTrack.pt();
+      gsf_track[1] = gsfTrack.phi();
+      gsf_track[2] = gsfTrack.eta();
+      gsf_track[3] = gsfTrack.charge();
+      gsf_track[4] = gsfTrack.dxy();
+      gsf_track[5] = gsfTrack.dz();
+      gsf_track[6] = gsfTrack.numberOfValidHits();
 
-            for (size_t i = 0; i < (*iassocseed).val.size(); i++) {
+      std::cout << "gsf (gsf_track) fill worked!" << std::endl;
 
-                std::cout << "loop entered" << std::endl;
-                std::cout << "i = " << i << ", (*iassocseed).val[i].second = " << (*iassocseed).val[i].second << std::endl;
+      if (iassocseed != mySeedToSim.end()){
+        std::cout << "\n" << "if (iassocseed != mySeedToSim.end()){" << std::endl;
 
-                if ((*iassocseed).val[i].second > qmax){
-                    std::cout << "qmax if entered" << std::endl;
-                    kmax = i;
-                    qmax = (*iassocseed).val[i].second;
-                    std::cout << "qmax = " << qmax << std::endl;
-                }
-                else {
-                    std::cout << "assocseed not filled, bad quality!" << std::endl;
-                }
-            }
-            std::cout << "qmax #2 = " << qmax << std::endl;
+          std::cout << "Sim to reco seed found!" << std::endl;
+          std::cout << "SIZE (*iassocseed).val.size() = " << (*iassocseed).val.size() << std::endl;
 
-            if ( qmax>0.) {
-                std::cout << "qmax < 0 found!" << std::endl;
+//            const edm::Ref<TrackingParticleCollection> tref_seed = (*iassocseed).val[j].first;
+//            std::cout << "(*iassocseed).val[j].second = " << (*iassocseed).val[j].second << "\n"
+//            << "tref_seed->pt() = " << tref_seed->pt() << "\n"
+//            << "tref_seed->phi() = " << tref_seed->phi() << "\n"
+//            << "tref_seed->eta() = " << tref_seed->eta() << "\n"
+//            << "tref_seed->charge() = " << tref_seed->charge() << "\n"
+//            << "tref_seed->numberOfTrackerLayers() = " << tref_seed->numberOfTrackerLayers()
+//            << std::endl;
 
-                gsf_track[7] = float(qmax);
+          size_t kmax = 0;
+          double qmax = -1.;
 
-                const edm::Ref<TrackingParticleCollection> tref_seed = (*iassocseed).val[kmax].first;
-                seed_assoc_track[0] = tref_seed->pt();
-                seed_assoc_track[1] = tref_seed->phi();
-                seed_assoc_track[2] = tref_seed->eta();
-                seed_assoc_track[3] = tref_seed->charge();
-                seed_assoc_track[6] = tref_seed->numberOfTrackerLayers();
-                std::cout << "seed_assoc_track writen!" << std::endl;
+          for (size_t i = 0; i < (*iassocseed).val.size(); i++) {
 
-                std::cout << "(*iassocseed).val[j].second = " << (*iassocseed).val[j].second << "\n"
-                << "tref_seed->pt() = " << tref_seed->pt() << "\n"
-                << "tref_seed->phi() = " << tref_seed->phi() << "\n"
-                << "tref_seed->eta() = " << tref_seed->eta() << "\n"
-                << "tref_seed->charge() = " << tref_seed->charge() << "\n"
-                << "tref_seed->x^2+y^2 = " << tref_seed->vx()*tref_seed->vx()+tref_seed->vy()*tref_seed->vy() << "\n"
-                << "tref_seed->numberOfTrackerLayers() = " << tref_seed->numberOfTrackerLayers()
-                << std::endl;
+              std::cout << "loop entered" << std::endl;
+              std::cout << "i = " << i << ", (*iassocseed).val[i].second = " << (*iassocseed).val[i].second << std::endl;
 
-                ++assocseedfound;
-                std::cout << "assocseedfound # increased!" << "\n" << std::endl;
+              if ((*iassocseed).val[i].second > qmax){
+                  std::cout << "qmax if entered" << std::endl;
+                  kmax = i;
+                  qmax = (*iassocseed).val[i].second;
+                  std::cout << "qmax = " << qmax << std::endl;
+              }
 
-            }
-            else {
-                std::cout << "No sim to reco seed!" << "\n" << std::endl;
-                gsf_track[7] = -1;
-            }
-        }
+              else {
+                  std::cout << "assocseed not filled, bad quality!" << std::endl;
+              }
+          }
 
-        if (iassoctrack != myTrackToSim.end()){
+          std::cout << "qmax #2 = " << qmax << std::endl;
 
-            std::cout << "Sim to reco track found!" << std::endl;
-            std::cout << "#myTrackToSim Size = " << myTrackToSim.size() << std::endl;
-//            std::cout << "std::typeid((*iassoctrack).first).name() = " << typeid(*iassoctrack).name() << "\n" << std::endl;
-//            std::cout << "#iassoctrack qual = " << (*iassoctrack).val[i].second << std::endl;
-            std::cout << "(*iassoctrack).val.size() = " << (*iassoctrack).val.size() << std::endl;
+          if ( qmax>0.) {
+              std::cout << "qmax < 0 found!" << std::endl;
 
-            size_t kmax = 0;
-            double qmax = -1.;
+              gsf_track[7] = float(qmax);
 
-            for (size_t i = 0; i < (*iassoctrack).val.size(); i++) {
+              const edm::Ref<TrackingParticleCollection> tref_seed = (*iassocseed).val[kmax].first;
+              seed_assoc_track[0] = tref_seed->pt();
+              seed_assoc_track[1] = tref_seed->phi();
+              seed_assoc_track[2] = tref_seed->eta();
+              seed_assoc_track[3] = tref_seed->charge();
+              seed_assoc_track[6] = tref_seed->numberOfTrackerLayers();
+              std::cout << "seed_assoc_track writen!" << std::endl;
 
-                if ((*iassoctrack).val[i].second > qmax){
-                    kmax = i;
-                    qmax = (*iassoctrack).val[i].second;
-                }
-                else {
-                    std::cout << "iassoctrack not filled, bad quality!" << std::endl;
-                }
-            }
+              ++assocseedfound;
+              std::cout << "assocseedfound # incresed!" << "\n" << std::endl;
+          }
+      }
 
-            if ( qmax>0.) {
-                std::cout << "qmax < 0 found!" << std::endl;
+      else {
+          std::cout << "No sim to reco seed!" << "\n" << std::endl;
+          gsf_track[7] = -1;
+      }
 
-                gsf_track[8] = float(qmax);
+      if (iassoctrack != myTrackToSim.end()){
 
-                const edm::Ref<TrackingParticleCollection> tref_track = (*iassoctrack).val[kmax].first;
-                track_assoc_track[0] = tref_track->pt();
-                track_assoc_track[1] = tref_track->phi();
-                track_assoc_track[2] = tref_track->eta();
-                track_assoc_track[3] = tref_track->charge();
-                track_assoc_track[6] = tref_track->numberOfTrackerLayers();
-                std::cout << "track_assoc_track writen!" << std::endl;
+          std::cout << "Sim to reco track found!" << std::endl;
+          std::cout << "#myTrackToSim Size = " << myTrackToSim.size() << std::endl;
+          std::cout << "std::typeid((*iassoctrack).first).name() = " << typeid(*iassoctrack).name() << "\n" << std::endl;
+//          std::cout << "#iassoctrack qual = " << (*iassoctrack).val[i].second << std::endl;
+          std::cout << "(*iassoctrack).val.size() = " << (*iassoctrack).val.size() << std::endl;
 
-                ++assoctrackfound;
-                std::cout << "assoctrackfound # increased!" << "\n" << std::endl;
-            }
-        }
-        else {
-            std::cout << "No sim to reco track!" << "\n" << std::endl;
-            gsf_track[8] = -1;
-        }
+          size_t kmax = 0;
+          double qmax = -1.;
+
+          for (size_t i = 0; i < (*iassoctrack).val.size(); i++) {
+
+              if ((*iassoctrack).val[i].second > qmax){
+                  kmax = i;
+                  qmax = (*iassoctrack).val[i].second;
+              }
+
+              else {
+                  std::cout << "iassoctrack not filled, bad quality!" << std::endl;
+              }
+          }
+
+          if ( qmax>0.) {
+              std::cout << "qmax < 0 found!" << std::endl;
+
+              gsf_track[8] = float(qmax);
+
+              const edm::Ref<TrackingParticleCollection> tref_track = (*iassoctrack).val[kmax].first;
+              track_assoc_track[0] = tref_track->pt();
+              track_assoc_track[1] = tref_track->phi();
+              track_assoc_track[2] = tref_track->eta();
+              track_assoc_track[3] = tref_track->charge();
+              track_assoc_track[6] = tref_track->numberOfTrackerLayers();
+              std::cout << "track_assoc_track writen!" << std::endl;
+
+              ++assoctrackfound;
+              std::cout << "assoctrackfound # incresed!" << "\n" << std::endl;
+          }
+      }
+
+      else {
+          std::cout << "No sim to reco track!" << "\n" << std::endl;
+          gsf_track[8] = -1;
+      }
 
 // to have quality information on both branches
-        seed_assoc_track[7] = gsf_track[7];
-        seed_assoc_track[8] = gsf_track[8];
-        track_assoc_track[7] = gsf_track[7];
-        track_assoc_track[8] = gsf_track[8];
+      seed_assoc_track[7] = gsf_track[7];
+      seed_assoc_track[8] = gsf_track[8];
+      track_assoc_track[7] = gsf_track[7];
+      track_assoc_track[8] = gsf_track[8];
 
-        track_tree->Fill();
-        std::cout << "all fills worked!" << "\n" << std::endl;
-    }
+      std::cout << "all fills worked!" << "\n" << std::endl;
 
-    seedsuccessrate = float(assocseedfound) / float(indexEvent);
-    tracksuccessrate = float(assoctrackfound) / float(indexEvent);
+      seedsuccessrate = float(assocseedfound) / float(indexEvent);
+      tracksuccessrate = float(assoctrackfound) / float(indexEvent);
 
-    std::cout << "indexEvent = " << indexEvent <<"\n"
-    << "assocseedfound = " <<assocseedfound << "\n"
-    << "p found = " << seedsuccessrate << "\n"
-    << "assoctrackfound = " <<assoctrackfound << "\n"
-    << "p found = " << tracksuccessrate << "\n"
-    <<"\n" << "------------------------------------------" << "\n" << std::endl;
+      std::cout << "indexEvent = " << indexEvent <<"\n"
+      << "assocseedfound = " <<assocseedfound << "\n"
+      << "p found = " << seedsuccessrate << "\n"
+      << "assoctrackfound = " <<assoctrackfound << "\n"
+      << "p found = " << tracksuccessrate << "\n"
+      <<"\n" << "------------------------------------------" << "\n" << std::endl;
 
+      stats[0] = indexEvent;
+      stats[1] = assocseedfound;
+      stats[2] = seedsuccessrate;
+      stats[3] = assoctrackfound;
+      stats[4] = tracksuccessrate;
+
+      track_tree->Fill();
   }
 
-  //------------------------------------------------------------------------------
 
-  // ------------ method called once each job just before starting event loop  ------------
-  void
-  MyTrackAssociator::beginJob()
-  {
+}
 
-    using namespace edm;
+//------------------------------------------------------------------------------
 
-  // initialize tree
-    edm::Service<TFileService> fs;
-    track_tree = fs->make<TTree>("track_associator_tree","Associator tree with branches" );
-    track_tree->Branch("gsf_track", &gsf_track, "gsf_track[9]/F");
-    track_tree->Branch("seed_assoc_track", &seed_assoc_track, "seed_assoc_track[9]/F");
-    track_tree->Branch("track_assoc_track", &track_assoc_track, "track_assoc_track[9]/F");
-  }
+// ------------ method called once each job just before starting event loop  ------------
+void
+MyTrackAssociator::beginJob()
+{
 
-  // ------------ method called once each job just after ending the event loop  ------------
-  void
-  MyTrackAssociator::endJob() {
-  }
+  using namespace edm;
 
-  // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
-  void
-  MyTrackAssociator::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
-   //The following says we do not know what parameters are allowed so do no validation
-   // Please change this to state exactly what you do use, even if it is no parameters
-   edm::ParameterSetDescription desc;
-   desc.setUnknown();
-   descriptions.addDefault(desc);
-  }
+// initialize tree
+  edm::Service<TFileService> fs;
+  track_tree = fs->make<TTree>("track_associator_tree","Associator tree with branches" );
+  track_tree->Branch("gsf_track", &gsf_track, "gsf_track[9]/F");
+  track_tree->Branch("seed_assoc_track", &seed_assoc_track, "seed_assoc_track[9]/F");
+  track_tree->Branch("track_assoc_track", &track_assoc_track, "track_assoc_track[9]/F");
+  track_tree->Branch("stats", &stats, "stats[5]/F");
 
-  //define this as a plug-in
-  DEFINE_FWK_MODULE(MyTrackAssociator);
+}
+
+// ------------ method called once each job just after ending the event loop  ------------
+void
+MyTrackAssociator::endJob() {
+}
+
+// ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
+void
+MyTrackAssociator::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+ //The following says we do not know what parameters are allowed so do no validation
+ // Please change this to state exactly what you do use, even if it is no parameters
+ edm::ParameterSetDescription desc;
+ desc.setUnknown();
+ descriptions.addDefault(desc);
+}
+
+//define this as a plug-in
+DEFINE_FWK_MODULE(MyTrackAssociator);
 
