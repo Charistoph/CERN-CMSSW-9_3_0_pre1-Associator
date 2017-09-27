@@ -11,7 +11,7 @@ from math import sqrt,pi
 # main code
 
 # open root file & tree
-filename = "output_gsf_associator.root"
+filename = "output_gsf_associator_1000_mixtures.root"
 tf = ROOT.TFile(filename)
 #tf.ls()
 tree_dir = tf.Get("MyTrackAssociator")
@@ -68,8 +68,13 @@ for event in tree:
         f.write(str(tree.size_nc_weight[1]) + "\n")
         for i in range(0,5):
             f.write(str(format(tree.tp_track[i], '.10f')) + "\n")
-        f.write(str(tree.ic_para))
+        f.write(str(tree.ic_para) + "\n")
         f.write(str(format(tree.size_nc_weight[2], '.8f')) + "\n")
+        for j in range(0,5):
+            f.write(str(format(tree.localPars[j], '.10f')) + "\n")
+        for a in range(0,5):
+            for b in range(0,a+1):
+                f.write(str(format(tree.localCov(a,b), '.14f')) + "\n")
         mixture_count +=1
 #        print "\n"
         print "mixture_count = " + str(mixture_count)
