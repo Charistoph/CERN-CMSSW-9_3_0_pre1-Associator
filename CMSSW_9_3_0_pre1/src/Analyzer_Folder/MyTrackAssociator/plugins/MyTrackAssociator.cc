@@ -112,9 +112,9 @@
   // ----------counting variables ---------------------------
       int indexEvent;
       int assocseedfound;
-      int assoctrackfound;
+      int mixturefound;
       double seedsuccessrate;
-      double tracksuccessrate;
+      double mixturesuccessrate;
       int track_varib_nr;
       int tp_varib_nr;
 
@@ -126,6 +126,7 @@
       float tp_track[5];
       float size_nc_weight[3];
       int ic_para[1];
+      float stats[5];
 
       AlgebraicVector5 localPars_;
       AlgebraicMatrix55 localCov_;
@@ -156,9 +157,9 @@
 
       indexEvent = 0;
       assocseedfound = 0;
-      assoctrackfound = 0;
+      mixturefound = 0;
       seedsuccessrate = 0;
-      tracksuccessrate = 0;
+      mixturesuccessrate = 0;
       track_varib_nr = 9;
       tp_varib_nr = 5;
 
@@ -275,6 +276,10 @@
             gsf_track[k] = 0;
             seed_assoc_track[k] = 0;
             track_assoc_track[k] = 0;
+        }
+
+        for (int k = 0; k < 5; k++){
+            stats[k] = 0;
         }
 
         size_nc_weight[0] = 0;
@@ -478,13 +483,14 @@
 //                        std::cout << "   " << lp.x() << " " << lp.y() << " " << lp.z() << std::endl;
 //                        GlobalVector gy(vtxTSOS.surface().toGlobal(LocalVector(0.,1.,0.)));
 //                        std::cout << "   " << gy.x() << " " << gy.y() << " " << gy.z() << std::endl;
+
+                    ++mixturefound;
+                    std::cout << "mixturefound # increased!" << "\n" << std::endl;
+
                     }
                     else {
                         std::cout << "Gsf Vertex too far from origin, no Gaussian Mix produced" << "\n" << std::endl;
                     }
-
-                    ++assoctrackfound;
-                    std::cout << "assoctrackfound # increased!" << "\n" << std::endl;
                 }
             }
         }
@@ -504,14 +510,20 @@
     }
 
     seedsuccessrate = float(assocseedfound) / float(indexEvent);
-    tracksuccessrate = float(assoctrackfound) / float(indexEvent);
+    mixturesuccessrate = float(mixturefound) / float(indexEvent);
 
     std::cout << "indexEvent = " << indexEvent <<"\n"
-    << "assocseedfound = " <<assocseedfound << "\n"
-    << "p found = " << seedsuccessrate << "\n"
-    << "assoctrackfound = " <<assoctrackfound << "\n"
-    << "p found = " << tracksuccessrate << "\n"
+//    << "assocseedfound = " <<assocseedfound << "\n"
+//    << "p found = " << seedsuccessrate << "\n"
+    << "mixturefound = " <<mixturefound << "\n"
+    << "p found = " << mixturesuccessrate << "\n"
     <<"\n" << "------------------------------------------" << "\n" << std::endl;
+
+    stats[0] = indexEvent;
+//    stats[1] = assocseedfound;
+//    stats[2] = seedsuccessrate;
+    stats[3] = mixturefound;
+    stats[4] = mixturesuccessrate;
 
   }
 
@@ -535,6 +547,7 @@
     track_tree->Branch("localPars",&localPars_);
     track_tree->Branch("localCov",&localCov_);
     track_tree->Branch("tp_track", &tp_track, "tp_track[5]/F");
+    track_tree->Branch("stats", &stats, "stats[5]/F");
   }
 
   // ------------ method called once each job just after ending the event loop  ------------
