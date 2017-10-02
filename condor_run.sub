@@ -1,0 +1,8 @@
+executable    = submitEventGeneration.sh
+arguments     = $(ClusterID) $(ProcId)
+output        = condor_test/output/hello.$(ClusterId).$(ProcId).out
+error         = condor_test/error/hello.$(ClusterId).$(ProcId).err
+log           = condor_test/log/hello.$(ClusterId).log
++JobFlavour   = "nextweek"
+queue
+
