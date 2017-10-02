@@ -235,9 +235,11 @@
 
     std::cout << "\n" << "------------------------------------------" << "\n" << "\n"
               << "--- Output Prints of MyTrackAssociator ---" << "\n" << "\n"
+              << "#GsfTrackCollection = " << GsfTrackCollectionHandle->size() << "\n"
               << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n"
+              << "#RecoTracks = " << TrackCollectionHandle->size() << "\n"
               << "#TrackingParticles = " << tpHandle->size() << "\n"
-              << "#RecoTracks = " << TrackCollectionHandle->size() << "\n" << std::endl;
+              << std::endl;
 
   // Associator Funktion
     auto impl = std::make_unique<QuickTrackAssociatorByHitsImpl>(iEvent.productGetter(),
@@ -267,11 +269,6 @@
         edm::RefToBase<reco::Track> seedRef(TrackCollectionHandle,j);
         reco::RecoToSimCollection::const_iterator iassoctrack = myTrackToSim.find(seedRef);
 
-        std::cout << "GsfTrackCollectionHandle->size() = " << GsfTrackCollectionHandle->size() << std::endl;
-        std::cout << "TrajectorySeedHandle->size() = " << TrajectorySeedHandle->size() << std::endl;
-        std::cout << "TrackCollectionHandle->size() = " << TrackCollectionHandle->size() << std::endl;
-        std::cout << "tpHandle->size() = " << tpHandle->size() << std::endl;
-
         for (int k = 0; k < track_varib_nr; k++){
             gsf_track[k] = 0;
             seed_assoc_track[k] = 0;
@@ -291,7 +288,7 @@
             tp_track[k] = 0;
         }
 
-        std::cout << "all track set to 0 worked! Loop Nr = " << j << std::endl;
+//        std::cout << "all track set to 0 worked! Loop Nr = " << j << std::endl;
 
 //        gsf_track[0] = gsfTrack.pt();
 //        gsf_track[1] = gsfTrack.phi();
@@ -301,36 +298,36 @@
 //        gsf_track[5] = gsfTrack.dz();
 //        gsf_track[6] = gsfTrack.numberOfValidHits();
 
-        std::cout << "gsf_track fill worked!" << std::endl;
+//        std::cout << "gsf_track fill worked!" << std::endl;
 
         if (iassocseed != mySeedToSim.end()){
 //          std::cout << "\n" << "if (iassocseed != mySeedToSim.end()){" << std::endl;
 
-            std::cout << "Sim to reco seed found!" << std::endl;
-            std::cout << "SIZE (*iassocseed).val.size() = " << (*iassocseed).val.size() << std::endl;
+//            std::cout << "Sim to reco seed found!" << std::endl;
+//            std::cout << "SIZE (*iassocseed).val.size() = " << (*iassocseed).val.size() << std::endl;
 
             size_t kmax = 0;
             double qmax = -1.;
 
             for (size_t i = 0; i < (*iassocseed).val.size(); i++) {
 
-                std::cout << "loop entered" << std::endl;
-                std::cout << "i = " << i << ", (*iassocseed).val[i].second = " << (*iassocseed).val[i].second << std::endl;
+//                std::cout << "loop entered" << std::endl;
+//                std::cout << "i = " << i << ", (*iassocseed).val[i].second = " << (*iassocseed).val[i].second << std::endl;
 
                 if ((*iassocseed).val[i].second > qmax){
 //                    std::cout << "qmax if entered" << std::endl;
                     kmax = i;
                     qmax = (*iassocseed).val[i].second;
-                    std::cout << "qmax = " << qmax << std::endl;
+//                    std::cout << "qmax = " << qmax << std::endl;
                 }
                 else {
-                    std::cout << "assocseed not filled, bad quality!" << std::endl;
+//                    std::cout << "assocseed not filled, bad quality!" << std::endl;
                 }
             }
 //            std::cout << "qmax #2 = " << qmax << std::endl;
 
             if ( qmax>0.) {
-                std::cout << "qmax < 0 found!" << std::endl;
+//                std::cout << "qmax < 0 found!" << std::endl;
 
 //                gsf_track[7] = float(qmax);
 
@@ -340,7 +337,7 @@
 //                seed_assoc_track[2] = tref_seed->eta();
 //                seed_assoc_track[3] = tref_seed->charge();
 //                seed_assoc_track[6] = tref_seed->numberOfTrackerLayers();
-                std::cout << "seed_assoc_track writen!" << std::endl;
+//                std::cout << "seed_assoc_track writen!" << std::endl;
 
 //                std::cout << "(*iassocseed).val[j].second = " << (*iassocseed).val[j].second << "\n"
 //                << "tref_seed->pt() = " << tref_seed->pt() << "\n"
@@ -352,7 +349,7 @@
 //                << std::endl;
 
                 ++assocseedfound;
-                std::cout << "assocseedfound # increased!" << "\n" << std::endl;
+//                std::cout << "assocseedfound # increased!" << "\n" << std::endl;
 
             }
             else {
@@ -427,7 +424,7 @@
 
                         tp_track[0] = tref_track->charge()/tref_track->p();
                         tp_track[1] = assocp.x()/assocp.z();
-                        tp_track[2] = -assocp.y()/assocp.z();
+                        tp_track[2] = assocp.y()/assocp.z();
                         tp_track[3] = assocv.x();
                         tp_track[4] = assocv.y();
 
@@ -506,7 +503,7 @@
 //        track_assoc_track[8] = gsf_track[8];
 
 //        track_tree->Fill();
-        std::cout << "all fills worked!" << "\n" << std::endl;
+//        std::cout << "all fills worked!" << "\n" << std::endl;
     }
 
     seedsuccessrate = float(assocseedfound) / float(indexEvent);
