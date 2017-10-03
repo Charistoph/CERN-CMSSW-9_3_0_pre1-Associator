@@ -234,12 +234,12 @@
     iEvent.getByToken(TrackCollectionToken_, TrackCollectionHandle);
 
     std::cout << "\n" << "------------------------------------------" << "\n" << "\n"
-              << "--- Output Prints of MyTrackAssociator ---" << "\n" << "\n"
-              << "#GsfTrackCollection = " << GsfTrackCollectionHandle->size() << "\n"
-              << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n"
-              << "#RecoTracks = " << TrackCollectionHandle->size() << "\n"
-              << "#TrackingParticles = " << tpHandle->size() << "\n"
-              << std::endl;
+    << "--- Output Prints of MyTrackAssociator ---" << "\n" << "\n"
+    << "#GsfTrackCollection = " << GsfTrackCollectionHandle->size() << "\n"
+    << "#TrajectorySeeds = " << TrajectorySeedHandle->size() << "\n"
+    << "#RecoTracks = " << TrackCollectionHandle->size() << "\n"
+    << "#TrackingParticles = " << tpHandle->size() << "\n"
+    << std::endl;
 
   // Associator Funktion
     auto impl = std::make_unique<QuickTrackAssociatorByHitsImpl>(iEvent.productGetter(),
@@ -258,7 +258,8 @@
     reco::RecoToSimCollection myTrackToSim = impl->associateRecoToSim(TrackCollectionHandle,tpHandle);
 
 // Associator loop
-    for ( size_t j=0; j< GsfTrackCollectionHandle->size() ; ++j ) {
+    for ( size_t j=0; j<GsfTrackCollectionHandle->size() ; ++j ) {
+        std::cout << "Assocation Loop Number = " << j << std::endl;
         const reco::GsfTrack& gsfTrack = GsfTrackCollectionHandle->at(j);
 
         ++indexEvent;
@@ -370,6 +371,7 @@
             double qmax = -1.;
 
             for (size_t i = 0; i < (*iassoctrack).val.size(); i++) {
+                std::cout << "Get correct seed Loop = " << i << std::endl;
 
                 if ((*iassoctrack).val[i].second > qmax){
                     kmax = i;
@@ -394,51 +396,52 @@
                 std::cout << "track_assoc_track writen!" << std::endl;
 
                 // GsfTrackToVtx loop code
-                for ( edm::View<reco::GsfTrack>::const_iterator igsf=gsfTrackHandle->begin();
-                igsf!=gsfTrackHandle->end(); ++igsf ) {
+//                for ( edm::View<reco::GsfTrack>::const_iterator igsf=gsfTrackHandle->begin();
+//                igsf!=gsfTrackHandle->end(); ++igsf ) {
+                const reco::GsfTrack* igsf = &(*gsfTrackHandle)[j];
 
-                    if ((tref_track->vx()*tref_track->vx()+tref_track->vy()*tref_track->vy())<0.0625) {
+                if ((tref_track->vx()*tref_track->vx()+tref_track->vy()*tref_track->vy())<0.0625) {
 
-                        TrajectoryStateOnSurface innTSOS = mtst.innerStateOnSurface(*igsf);
-                        // Changed from GlobalPoint(0.,0.,0.)
-                        TrajectoryStateOnSurface vtxTSOS = mtst.extrapolatedState(innTSOS,GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz()));
-                        std::cout << "GsfTrackToVtx code" << "\n"
-                        << "innTSOS comp.size = " << innTSOS.components().size() << "\n"
-                        << "vtxTSOS comp.size = " << vtxTSOS.components().size() << "\n"
+                    TrajectoryStateOnSurface innTSOS = mtst.innerStateOnSurface(*igsf);
+                    // Changed from GlobalPoint(0.,0.,0.)
+                    TrajectoryStateOnSurface vtxTSOS = mtst.extrapolatedState(innTSOS,GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz()));
+//                        std::cout << "GsfTrackToVtx code" << "\n"
+//                        << "innTSOS comp.size = " << innTSOS.components().size() << "\n"
+//                        << "vtxTSOS comp.size = " << vtxTSOS.components().size() << "\n"
 //                        << "vtxTSOS localParameters().vector() = " << vtxTSOS.localParameters().vector() << "\n"
 //                        << "vtxTSOS localError().matrix() = " << vtxTSOS.localError().matrix() << "\n"
-                        << std::endl;
+//                    << std::endl;
 
-                        std::cout << "Gsf total mixture loop start" << std::endl;
+//                        std::cout << "Gsf total mixture loop start" << std::endl;
 
-                        LocalVector assocp(vtxTSOS.surface().toLocal(GlobalVector(tref_track->px(),tref_track->py(),tref_track->pz())));
-                        LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
+                    LocalVector assocp(vtxTSOS.surface().toLocal(GlobalVector(tref_track->px(),tref_track->py(),tref_track->pz())));
+                    LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
 
-                        size_nc_weight[0] = j;
-                        size_nc_weight[1] = vtxTSOS.components().size();
-                        size_nc_weight[2] = 1;
-                        ic_para[0] = -1;
+                    size_nc_weight[0] = j;
+                    size_nc_weight[1] = vtxTSOS.components().size();
+                    size_nc_weight[2] = 1;
+                    ic_para[0] = -1;
 
-                        localPars_ = vtxTSOS.localParameters().vector();
-                        localCov_ = vtxTSOS.localError().matrix();
+                    localPars_ = vtxTSOS.localParameters().vector();
+                    localCov_ = vtxTSOS.localError().matrix();
 
-                        tp_track[0] = tref_track->charge()/tref_track->p();
-                        tp_track[1] = assocp.x()/assocp.z();
-                        tp_track[2] = assocp.y()/assocp.z();
-                        tp_track[3] = assocv.x();
-                        tp_track[4] = assocv.y();
+                    tp_track[0] = tref_track->charge()/tref_track->p();
+                    tp_track[1] = assocp.x()/assocp.z();
+                    tp_track[2] = assocp.y()/assocp.z();
+                    tp_track[3] = assocv.x();
+                    tp_track[4] = assocv.y();
 
-                        track_tree->Fill();
+                    track_tree->Fill();
 
-                        std::cout << "Gsf total mixture filled" << std::endl;
-                        std::cout << "Gsf component loop start" << "\n" << std::endl;
+                    std::cout << "Gsf total mixture filled" << std::endl;
+//                        std::cout << "Gsf component loop start" << "\n" << std::endl;
 
-                        for (size_t ic=0; ic<vtxTSOS.components().size(); ++ic ) {
+                    for (size_t ic=0; ic<vtxTSOS.components().size(); ++ic ) {
 
-                              LocalVector assocp(vtxTSOS.surface().toLocal(GlobalVector(tref_track->px(),tref_track->py(),tref_track->pz())));
+                          LocalVector assocp(vtxTSOS.surface().toLocal(GlobalVector(tref_track->px(),tref_track->py(),tref_track->pz())));
 //                              std::cout << "toLocal seed g p -> l p = " << assocp.x() << " " << assocp.y() << " " << assocp.z() << std::endl;
 
-                              LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
+                          LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
 //                              std::cout << "toLocal seed g v -> l v = " << assocv.x() << " " << assocv.y() << " " << assocv.z() << std::endl;
 
 //                              std::cout << "\n"
@@ -455,40 +458,40 @@
 //                              << "tref_track->charge()/tref_track->p() assocp.x()/assocp.z() -assocp.y()/assocp.z() assocv.x() assocv.y()" << "\n"
 //                              << std::endl;
 
-                              size_nc_weight[0] = j;
-                              size_nc_weight[1] = vtxTSOS.components().size();
-                              size_nc_weight[2] = vtxTSOS.components()[ic].weight();
-                              ic_para[0] = ic;
+                          size_nc_weight[0] = j;
+                          size_nc_weight[1] = vtxTSOS.components().size();
+                          size_nc_weight[2] = vtxTSOS.components()[ic].weight();
+                          ic_para[0] = ic;
 
 //                              std::cout << "size = " << typeid(vtxTSOS.components().size()).name() << "ic " << typeid(ic).name() << std::endl;
 
-                              localPars_ = vtxTSOS.components()[ic].localParameters().vector();
-                              localCov_ = vtxTSOS.components()[ic].localError().matrix();
+                          localPars_ = vtxTSOS.components()[ic].localParameters().vector();
+                          localCov_ = vtxTSOS.components()[ic].localError().matrix();
 
-                              tp_track[0] = tref_track->charge()/tref_track->p();
-                              tp_track[1] = assocp.x()/assocp.z();
-                              tp_track[2] = -assocp.y()/assocp.z();
-                              tp_track[3] = assocv.x();
-                              tp_track[4] = assocv.y();
+                          tp_track[0] = tref_track->charge()/tref_track->p();
+                          tp_track[1] = assocp.x()/assocp.z();
+                          tp_track[2] = -assocp.y()/assocp.z();
+                          tp_track[3] = assocv.x();
+                          tp_track[4] = assocv.y();
 
-                              track_tree->Fill();
+                          track_tree->Fill();
 
-                              std::cout << "Loop " << ic << " complete & filled" << std::endl;
-                        }
+                          std::cout << "Loop " << ic << " complete & filled" << std::endl;
+                    }
 
 //                        LocalPoint lp(vtxTSOS.surface().toLocal(GlobalPoint(0.,0.,0.)));
 //                        std::cout << "   " << lp.x() << " " << lp.y() << " " << lp.z() << std::endl;
 //                        GlobalVector gy(vtxTSOS.surface().toGlobal(LocalVector(0.,1.,0.)));
 //                        std::cout << "   " << gy.x() << " " << gy.y() << " " << gy.z() << std::endl;
 
-                    ++mixturefound;
-                    std::cout << "mixturefound # increased!" << "\n" << std::endl;
+                ++mixturefound;
+                std::cout << "mixturefound # increased!" << "\n" << std::endl;
 
-                    }
-                    else {
-                        std::cout << "Gsf Vertex too far from origin, no Gaussian Mix produced" << "\n" << std::endl;
-                    }
                 }
+                else {
+                    std::cout << "Gsf Vertex too far from origin, no Gaussian Mix produced" << "\n" << std::endl;
+                }
+//                }
             }
         }
         else {
