@@ -400,11 +400,9 @@
 //                igsf!=gsfTrackHandle->end(); ++igsf ) {
                 const reco::GsfTrack* igsf = &(*gsfTrackHandle)[j];
 
-                if ((tref_track->vx()*tref_track->vx()+tref_track->vy()*tref_track->vy())<0.0625) {
-
-                    TrajectoryStateOnSurface innTSOS = mtst.innerStateOnSurface(*igsf);
-                    // Changed from GlobalPoint(0.,0.,0.)
-                    TrajectoryStateOnSurface vtxTSOS = mtst.extrapolatedState(innTSOS,GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz()));
+                TrajectoryStateOnSurface innTSOS = mtst.innerStateOnSurface(*igsf);
+                // Changed from GlobalPoint(0.,0.,0.)
+                TrajectoryStateOnSurface vtxTSOS = mtst.extrapolatedState(innTSOS,GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz()));
 //                        std::cout << "GsfTrackToVtx code" << "\n"
 //                        << "innTSOS comp.size = " << innTSOS.components().size() << "\n"
 //                        << "vtxTSOS comp.size = " << vtxTSOS.components().size() << "\n"
@@ -414,8 +412,10 @@
 
 //                        std::cout << "Gsf total mixture loop start" << std::endl;
 
-                    LocalVector assocp(vtxTSOS.surface().toLocal(GlobalVector(tref_track->px(),tref_track->py(),tref_track->pz())));
-                    LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
+                LocalVector assocp(vtxTSOS.surface().toLocal(GlobalVector(tref_track->px(),tref_track->py(),tref_track->pz())));
+                LocalPoint assocv(vtxTSOS.surface().toLocal(GlobalPoint(tref_track->vx(),tref_track->vy(),tref_track->vz())));
+
+                if ((assocv.x()*assocv.x()+assocv.y()*assocv.y())<0.001) {
 
                     size_nc_weight[0] = j;
                     size_nc_weight[1] = vtxTSOS.components().size();
